@@ -1,0 +1,17 @@
+plugin.tx_wecmap.settings{
+	settings{
+        templateRootPath = EXT:wec_map/Resources/Private/Templates/
+        partialRootPath = EXT:wec_map/Resources/Private/Partials/
+        layoutRootPath = EXT:wec_map/Resources/Private/Layouts/
+    }
+}
+module.tx_wecmap {
+    settings < plugin.tx_wecmap.settings
+    persistence < plugin.tx_wecmap.persistence
+    view < plugin.tx_wecmap.view
+    view {
+        templateRootPath = EXT:wec_map/Resources/Private/Backend/Templates/
+        partialRootPath = EXT:wec_map/Resources/Private/Partials/
+        layoutRootPath = EXT:wec_map/Resources/Private/Layouts/
+    }
+}
