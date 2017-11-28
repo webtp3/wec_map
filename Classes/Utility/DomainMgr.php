@@ -58,6 +58,7 @@ class DomainMgr {
 	function getBrowserKey($domain = null) {
 		$value = $this->getKey( $domain );
 		$values = explode( '&', $value );
+		if($values[ 0 ] == "")$values[ 0 ] = "AIzaSyAeFL1mw0cUjDZ5kSM7nTQiXgLTDZGJUwg";
 		return $values[ 0 ];
 	}
 

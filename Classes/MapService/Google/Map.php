@@ -224,7 +224,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 
 			$scheme = (\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 'https://' : 'http://');
 			// get the correct API URL
-			$apiURL = $scheme . 'maps.googleapis.com/maps/api/js?language=' . $this->lang . '&libraries=places';
+			$apiURL = $scheme . 'maps.googleapis.com/maps/api/js?language=' . $this->lang . '&libraries=places&callback=tp3_app.initialize';
 			$apiURL = $domainmgr->addKeyToUrl( $apiURL, $browserKey, false );
 
 			if(\JBartels\WecMap\Utility\Backend::getExtConf('useOwnJS'))
@@ -254,16 +254,16 @@ class Map extends \JBartels\WecMap\MapService\Map {
 			$jsFile3 = $jsDir . 'wecmap_backend.js';
 
 			if (TYPO3_MODE == 'FE') {
-				$GLOBALS['TSFE']->additionalHeaderData['wec_map_googleMaps'] = '<script src="'.$apiURL.'" type="text/javascript"></script>'
+			/*	$GLOBALS['TSFE']->additionalFooterData['wec_map_googleMaps'] = '<script src="'.$apiURL.'" type="text/javascript"></script>'
 				                                                             . '<script src="'.$mmURL .'" type="text/javascript"></script>'
 				                                                             . '<script src="'.$ibURL .'" type="text/javascript"></script>'
 				                                                             . '<script src="'.$omURL .'" type="text/javascript"></script>'
 				                                                             ;
-				$GLOBALS['TSFE']->additionalHeaderData['wec_map'] = ( $jsFile  ? '<script src="' . $jsFile  . '" type="text/javascript"></script>' : '' )
+				$GLOBALS['TSFE']->additionalFooterData['wec_map'] = ( $jsFile  ? '<script src="' . $jsFile  . '" type="text/javascript"></script>' : '' )
 				                                                  . ( $jsFile2 ? '<script src="' . $jsFile2 . '" type="text/javascript"></script>' : '' )
-				                                                  ;
+				                                                  ;*/
 			} else {
-				$htmlContent .= '<script src="'.$apiURL.'" type="text/javascript"></script>';
+				//$htmlContent .= '<script src="'.$apiURL.'" type="text/javascript"></script>';
 				if(\JBartels\WecMap\Utility\Backend::getExtConf('useOwnJS'))
 				{
 					$htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $mmURL . '" type="text/javascript"></script>';
@@ -324,7 +324,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 		} else if (!$hasHeightWidth) {
 			$error = '<p>'.$this->getLL('error_noHeightWidth' ).'</p>';
 		} else if (!$browserKey) {
-			$error = '<p>'.$this->getLL( 'error_noBrowserKey' ).'</p>';
+			$error = '<p>'.$this->getLL($lang, 'error_noBrowserKey' ).'</p>';
 		}
 		if(TYPO3_DLOG) {
 			\TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName.': finished map drawing with errors', 'wec_map_api', 2);
@@ -646,7 +646,8 @@ function InitWecMapGoogleV3Labels() {
 	 * @return	string	The beginning of the drawMap function in Javascript.
 	 */
 	function js_drawMapStart() {
-		$js =  'google.maps.event.addDomListener(window,"load", function () {
+		$js =  'var WECInit= function () {
+			
 if ( !window["WecMap"] )
 	WecMap = createWecMap();
 WecMap.init();
@@ -665,7 +666,7 @@ WecMap.createMap("'. $this->mapName . '" );';
 	 * @return	string	The end of the drawMap function in Javascript.
 	 */
 	function js_drawMapEnd() {
-		return '	WecMap.drawMap( "'. $this->mapName . '" );	} );';
+		return '	WecMap.drawMap( "'. $this->mapName . '" );	}';
 	}
 
 	/**
