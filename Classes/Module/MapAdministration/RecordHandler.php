@@ -31,43 +31,9 @@
 namespace JBartels\WecMap\Module\MapAdministration;
 
 class RecordHandler {
-	
-	
+
 	var $itemsPerPage = 75;
-	/**
-	 * @var array
-	 */
-	protected $iconMapping = array(
-			'gfx/zoom.gif' => 'actions-search',
-			'gfx/edit2.gif' => 'actions-open',
-			'gfx/garbage.gif' => 'actions-delete',
-			'gfx/napshot.gif' => 'actions-document-save',
-			'gfx/clip_copy.gif' => 'actions-edit-copy',
-			'gfx/up.gif' => 'actions-move-up',
-			'gfx/new_el.gif' => 'actions-document-new',
-	);
-	/**
-	 * @var null|\TYPO3\CMS\Core\Imaging\IconFactory
-	 */
-	protected $iconFactory = null;
-	/**
-	 * @param string $icon
-	 * @param string $iconSize
-	 * @param string $backPath
-	 * @param string $title
-	 * @param string $alt
-	 *
-	 * @return string
-	 */
-	protected function getIcon($icon, $iconSize = '', $backPath = '', $title = '', $alt = '')
-	{
-		if ($this->typo3VersionMain === 6) {
-			return $this->getIconByIconUtility($icon, $iconSize, $backPath, $title, $alt);
-		} else {
-			$icon = $this->iconMapping[$icon];
-			return $this->getIconByIconFactory($icon);
-		}
-	}
+
 	/**
 	 * Displays the table with cache records
 	 *
@@ -80,28 +46,24 @@ class RecordHandler {
 		$limit = null;
 		// Select rows:
 		$displayRows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('*','tx_wecmap_cache','', 'address', 'address', $limit);
-		//if ($this->typo3VersionMain > 6) {
-			$this->iconFactory = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Core\\Imaging\\IconFactory');
-		//}
-	
-		
-		$iconEdit =$this->getIcon( $this->iconMapping['actions-document-open'], array(
+
+		$iconEdit = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-open', array(
 			'title' => 'hallo' . $LANG->getLL('editAddress'),
 			'alt' => 'welt' . $LANG->getLL('editAddress')
 			)
 		);
-		$iconSave = $this->getIcon('actions-document-save', array(
+		$iconSave = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-save', array(
 			'title' => $LANG->getLL('editAddress'),
 			'alt' => $LANG->getLL('editAddress')
 			)
 		);
-		$iconCancel = $this->getIcon('actions-document-close', array(
+		$iconCancel = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-close', array(
 			'title' => $LANG->getLL('cancelUpdate'),
 			'alt' => $LANG->getLL('cancelUpdate')
 			)
 		);
 
-		$iconDelete = $this->getIcon('actions-edit-delete', array(
+		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
 			'title' => $LANG->getLL('deleteAddress'),
 			'alt' => $LANG->getLL('deleteAddress')
 			)
@@ -158,7 +120,7 @@ class RecordHandler {
 	function displaySearch() {
 		global $LANG;
 
-	//	$iconFilter = $this->getIcon( 'actions-document-save' );
+		$iconFilter = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon( 'actions-document-save' );
 
 		$content = '<div><input id="recordSearchbox" type="text" placeholder="'.$LANG->getLL('searchFilter').'" size="20"/><button id="resetSearchboxButton" style="display: none;">'.$LANG->getLL('clearFilter').'</button></div>';
 		return $content;
@@ -173,7 +135,7 @@ class RecordHandler {
 	 **/
 	function getTotalCountHeader() {
 		global $LANG;
-		$iconDelete = $this->getIcon('actions-edit-delete', array(
+		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
 			'title' => $LANG->getLL('deleteCache'),
 			'alt' => $LANG->getLL('deleteCache')
 			)
@@ -187,36 +149,6 @@ class RecordHandler {
 	function linkSelf($addParams)	{
 		return htmlspecialchars('index.php?id='.$this->pObj->id.'&showLanguage='.rawurlencode(\TYPO3\CMS\Core\Utility\GeneralUtility::_GP('showLanguage')).$addParams);
 	}
-  /**
-     * @param string $icon
-     * @param string $iconSize
-     * @param string $backPath
-     * @param string $title
-     * @param string $alt
-     *
-     * @return string
-     */
-    protected function getIconByIconUtility($icon, $iconSize, $backPath, $title, $alt)
-    {
-        $imgTag = '<img' . \TYPO3\CMS\Backend\Utility\IconUtility::skinImg($backPath, $icon, $iconSize);
-        if ($title !== '') {
-            $imgTag .= 'title="' . htmlspecialchars($title) . '" ';
-        }
-        if ($alt !== '') {
-            $imgTag .= 'alt="' . htmlspecialchars($alt) . '" ';
-        }
-        $imgTag .= '/>';
-        return $imgTag;
-    }
-    /**
-     * @param string $icon
-     *
-     * @return string
-     */
-    protected function getIconByIconFactory($icon) {
-        $iconSize = \TYPO3\CMS\Core\Imaging\Icon::SIZE_SMALL;
-        return $this->iconFactory->getIcon($icon, $iconSize)->render();
-    }
 }
 
 if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/mod1/class.tx_wecmap_recordhandler.php'])	{
