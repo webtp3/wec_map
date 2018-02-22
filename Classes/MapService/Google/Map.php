@@ -317,7 +317,9 @@ class Map extends \JBartels\WecMap\MapService\Map {
 			$jsContentString = implode(chr(10), $jsContent);
 
 			// then return it
-			return $htmlContent.\TYPO3\CMS\Core\Utility\GeneralUtility::wrapJS($jsContentString);
+            $GLOBALS['TSFE']->additionalFooterData['wec_map'] = "<script>".$jsContentString."</script>";
+
+            return $htmlContent;
 
 		} else if (!$hasThingsToDisplay) {
 			$error = '<p>'.$this->getLL( 'error_nothingToDisplay' ).'</p>';
