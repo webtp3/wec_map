@@ -66,7 +66,12 @@ class Map extends \JBartels\WecMap\MapService\Map {
 	public  $langService;
 
 	public  $markerClassName = 'JBartels\\WecMap\\MapService\\Google\\Marker';
+    /**
+     *
+     * @var \TYPO3\CMS\Core\Page\PageRenderer;
+     */
 
+    public $pageRenderer = null;
 	/**
 	 * Class constructor.  Creates javscript array.
 	 * @access	public
@@ -117,7 +122,9 @@ class Map extends \JBartels\WecMap\MapService\Map {
 		$this->langService = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Lang\LanguageService::class);
 		$this->langService->init( $this->lang );
 		$this->LOCAL_LANG = $this->langService->getParserFactory()->getParsedData('EXT:wec_map/Resources/Private/Languages/MapService/Google/locallang.xlf', $this->lang, '', 2);
-	}
+        $this->pageRenderer =  \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Page\PageRenderer::class);
+
+    }
 
 	function getLL($index)
 	{
@@ -254,31 +261,31 @@ class Map extends \JBartels\WecMap\MapService\Map {
 			$jsFile3 = $jsDir . 'wecmap_backend.js';
 
 			if (TYPO3_MODE == 'FE') {
-			/*	$GLOBALS['TSFE']->additionalFooterData['wec_map_googleMaps'] = '<script src="'.$apiURL.'" type="text/javascript"></script>'
-				                                                             . '<script src="'.$mmURL .'" type="text/javascript"></script>'
-				                                                             . '<script src="'.$ibURL .'" type="text/javascript"></script>'
-				                                                             . '<script src="'.$omURL .'" type="text/javascript"></script>'
-				                                                             ;
-				$GLOBALS['TSFE']->additionalFooterData['wec_map'] = ( $jsFile  ? '<script src="' . $jsFile  . '" type="text/javascript"></script>' : '' )
-				                                                  . ( $jsFile2 ? '<script src="' . $jsFile2 . '" type="text/javascript"></script>' : '' )
-				                                                  ;*/
+				$this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_apiURL',$apiURL,'text/javascript', true,  false, '', false, '|', true, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_mmURL',$mmURL,'text/javascript', true,  false, '', false, '|', true, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_ibURL',$ibURL,'text/javascript', true,  false, '', false, '|', true, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_omURL',$omURL,'text/javascript', true,  false, '', false, '|', true, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_jsFile',$jsFile,'text/javascript', true,  false, '', false, '|', true, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_jsFile2',$jsFile2,'text/javascript', true,  false, '', false, '|', true, '');
+
+
 			} else {
-				//$htmlContent .= '<script src="'.$apiURL.'" type="text/javascript"></script>';
+				$htmlContent .= '<script defer async="async" src="'.$apiURL.'" type="text/javascript"></script>';
 				if(\JBartels\WecMap\Utility\Backend::getExtConf('useOwnJS'))
 				{
-					$htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $mmURL . '" type="text/javascript"></script>';
-					$htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $ibURL . '" type="text/javascript"></script>';
-					$htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $omURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $mmURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $ibURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $omURL . '" type="text/javascript"></script>';
 				}
 				else
 				{
-					$htmlContent .= '<script src="' . $mmURL . '" type="text/javascript"></script>';
-					$htmlContent .= '<script src="' . $ibURL . '" type="text/javascript"></script>';
-					$htmlContent .= '<script src="' . $omURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . $mmURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . $ibURL . '" type="text/javascript"></script>';
+					$htmlContent .= '<script defer async="async" src="' . $omURL . '" type="text/javascript"></script>';
 				}
 				$htmlContent .= ( $jsFile  ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile  . '" type="text/javascript"></script>' : '' )
-				              . ( $jsFile2 ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile2 . '" type="text/javascript"></script>' : '' )
-				              . ( $jsFile3 ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile3 . '" type="text/javascript"></script>' : '' )
+				              . ( $jsFile2 ? '<script defer async="async" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile2 . '" type="text/javascript"></script>' : '' )
+				              . ( $jsFile3 ? '<script defer async="async" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile3 . '" type="text/javascript"></script>' : '' )
 				              ;
 			}
 
@@ -317,7 +324,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 			$jsContentString = implode(chr(10), $jsContent);
 
 			// then return it
-            $GLOBALS['TSFE']->additionalFooterData['wec_map'] = "<script>".$jsContentString."</script>";
+       $this->pageRenderer->addJsFooterInlineCode('wec_map_googleMaps_jsFile',$jsContentString);
 
             return $htmlContent;
 
@@ -650,7 +657,6 @@ function InitWecMapGoogleV3Labels() {
 	function js_drawMapStart() {
 		$js =  'var WECInit= function () {
 			
-if ( !window["WecMap"] )
 	WecMap = createWecMap();
 WecMap.init();
 InitWecMapGoogleV3Labels();
