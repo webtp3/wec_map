@@ -39,6 +39,10 @@ namespace JBartels\WecMap\Utility;
  * @subpackage tx_wecmap
  */
 class DomainMgr {
+    /**
+     *
+     */
+    public $cObj = null;
 
 	public $extKey = 'wec_map';
 	/**

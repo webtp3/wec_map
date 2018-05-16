@@ -1,4 +1,5 @@
 plugin.tx_wecmap_pi3 {
+	apiKey = {$mapsAPIkey}
 
 	height = 500
 	width = 500

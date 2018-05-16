@@ -56,7 +56,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 	public  $showInfoOnLoad;
 	public  $maxAutoZoom = 15;
 	public  $static = false;
-
+	public  $key = null;
 	// array to hold the different Icons
 	public  $icons;
 
@@ -85,7 +85,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 		$this->js = array();
 		$this->markers = array();
 		$this->kml = array();
-
+		$this->key = $key;
 		// array to hold the different Icons
 		$this->icons = array();
 
@@ -114,7 +114,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 			$this->lang = $GLOBALS['TSFE']->config['config']['language'];
 		}
 		if( $this->lang == 'default')
-			$this->lang = 'en';
+			$this->lang = 'de';
 		else if( empty( $this->lang ) )
 			$this->lang = 'en';
 
@@ -213,8 +213,8 @@ class Map extends \JBartels\WecMap\MapService\Map {
 
 		// make sure we have markers to display and an API key
 		$domainmgr = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance( \JBartels\WecMap\Utility\DomainMgr::class );
-		$browserKey = $domainmgr->getBrowserKey();
-
+		if($this->key == null)$browserKey = $domainmgr->getBrowserKey();
+		else $browserKey = $this->key;
 		if ($hasThingsToDisplay && $hasHeightWidth && $browserKey ) {
 
 			// auto center and zoom if necessary
