@@ -229,7 +229,7 @@ class Map extends \JBartels\WecMap\MapService\Map {
 				return $htmlContent;
 			}
 
-			$scheme = (\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 'https://' : 'http://');
+			$scheme = "https://";//(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 'https://' : 'http://');
 			// get the correct API URL
 			$apiURL = $scheme . 'maps.googleapis.com/maps/api/js?language=' . $this->lang . '&libraries=places&callback=tp3_app.initialize';
 			$apiURL = $domainmgr->addKeyToUrl( $apiURL, $browserKey, false );
