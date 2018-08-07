@@ -15,9 +15,15 @@ namespace JBartels\WecMap\Controller;
  */
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-use TYPO3\CMS\Backend\Template\DocumentTemplate;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
-use JBartels\WecMap\Module\FEUserMap;
+use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Core\Localization\Locales;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\FormProtection\FormProtectionFactory;
+
+use TYPO3\CMS\Core\Utility\ArrayUtility;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
  * Controller which handles actions related to Asset.
@@ -57,12 +63,34 @@ class MapAdministrationController extends ActionController {
 			return $this->getIconByIconFactory($icon);
 		}
 	}
-	/**
-	 * Interface of a view
-	 *
-	 * @return TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
-	 */
-	public $view;
+    /**
+     * Backend Template Container.
+     * Takes care of outer "docheader" and other stuff this module is embedded in.
+     *
+     * @var string
+     */
+    protected $defaultViewObjectName = BackendTemplateView::class;
+
+    /**
+     * @var  pageUid
+     */
+    public  $pageUid= null;
+    /**
+     * BackendTemplateContainer
+     *
+     * @var BackendTemplateView
+     */
+    protected $view;
+
+    /**
+     * @var PageRenderer
+     */
+    protected $pageRenderer;
+
+    /**
+     * @var array
+     */
+    protected $MOD_MENU;
 	/**
 	 * 
 	 * 
@@ -75,7 +103,83 @@ class MapAdministrationController extends ActionController {
 	 */
 	
 	public $content;
-	/**
+
+    protected function initializeAction()
+    {
+        if (array_key_exists('wec_map', $GLOBALS['TYPO3_CONF_VARS']['EXTCONF'])
+            && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['wec_map'])
+        ) {
+            ArrayUtility::mergeRecursiveWithOverrule(
+                $this->configuration,
+                $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['wec_map']
+            );
+        }
+        //$this->cObj=  $this->configurationManager->getContentObject();
+
+        parent::initializeAction();
+
+        if (!($this->localeService instanceof Locales)) {
+            $this->localeService = GeneralUtility::makeInstance(Locales::class);
+        }
+        if (!($this->pageRenderer instanceof PageRenderer)) {
+            $this->pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
+        }
+
+
+    }
+
+
+    /**
+     * @param ViewInterface $view
+     *
+     * @return void
+     */
+    protected function initializeView(ViewInterface $view)
+    {
+        parent::initializeView($view);
+
+        // Early return for actions without valid view like tcaCreateAction or tcaDeleteAction
+        if (!($this->view instanceof BackendTemplateView)) {
+            return;
+        }
+
+        if (TYPO3_MODE === 'BE') {
+
+            $this->registerDocheaderButtons();
+
+        }
+        //  $this->view->render();
+    }
+
+    /**
+     * Registers the Icons into the docheader
+     *
+     * @return void
+     * @throws \InvalidArgumentException
+     */
+    protected function registerDocheaderButtons()
+    {
+        /** @var ButtonBar $buttonBar */
+        $buttonBar = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
+        $currentRequest = $this->request;
+        $moduleName = $currentRequest->getPluginName();
+        $lang = $this->getLanguageService();
+
+        $extensionName = $currentRequest->getControllerExtensionName();
+        $modulePrefix = strtolower('tx_' . $extensionName . '_' . $moduleName);
+        $shortcutName = $this->getLanguageService()->sL(
+            'LLL:EXT:beuser/Resources/Private/Language/locallang.xml:backendUsers'
+        );
+       // $publicResourcesPath = ExtensionManagementUtility::extPath("wec_map") ;
+        $this->pageRenderer->loadRequireJsModule('TYPO3/CMS/WecMap/MapAdministration');
+        $shortcutButton = $buttonBar->makeShortcutButton()
+            ->setModuleName($moduleName)
+            ->setDisplayName($shortcutName)
+            ->setGetVariables(array('id' => (int)GeneralUtility::_GP('id')));
+        $buttonBar->addButton($shortcutButton);
+    }
+
+    /**
 	 * Allows the widget template root path to be overridden via the framework configuration,
 	 * e.g. plugin.tx_extension.view.widget.<WidgetViewHelperClassName>.templateRootPaths
 	 *
@@ -105,7 +209,7 @@ class MapAdministrationController extends ActionController {
 	function indexAction()	{
 		$this->setViewConfiguration($this->view);
 		$this->iconFactory = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Core\\Imaging\\IconFactory');
-		return $this->moduleContent();
+		$this->moduleContent();
 		
 	}
 	/**
@@ -115,13 +219,7 @@ class MapAdministrationController extends ActionController {
 	 */
 	function moduleContent()	{
 	
-		//case 1:
-			$this->content.=$this->showMap();
-			//break;
-		
-		//case 2:
-			$this->content .= $this->mapSettings();
-			//break;
+
 		//switch((string)$this->MOD_SETTINGS['function'])	{
 			//case 1:
 				$this->content.=$this->geocodeAdmin();
@@ -130,14 +228,19 @@ class MapAdministrationController extends ActionController {
 				$this->content.=$this->batchGeocode();
 			//	break;
 		//	case 3:
-				$this->content.=$this->downloadJSFiles();
+		//		$this->content.=$this->downloadJSFiles();
 		//		break;
 		//	case 4:
 				$this->content.=$this->apiKeyAdmin();
 		//		break;
 		//}
-		return $this->content;
-	}
+		//return $this->content;
+        $this->view->assign('content', $this->content);
+        $this->view->assign('geocodeAdmin', $this->geocodeAdmin());
+        $this->view->assign('batchGeocode', $this->batchGeocode());
+        $this->view->assign('apiKeyAdmin', $this->apiKeyAdmin());
+
+    }
 	function mapSettings() {
 	
 		if(\TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx-wecmap-mod1-submit')) {
@@ -285,7 +388,7 @@ class MapAdministrationController extends ActionController {
 	
 					// add a little info so users know what to do
 					$title = '';
-					$description = '<div class="description">'.sprintf($LANG->getLL('country_zoominfo_desc'), $row[$countryField]).'</div>';
+					$description = '<div class="description">'.sprintf($this->getLanguageService()->sL('country_zoominfo_desc'), $row[$countryField]).'</div>';
 	
 					// add a marker for this country and only show it between zoom levels 0 and 2.
 					$map->addMarkerByAddress(null, $row[$cityField], $row[$stateField], $row[$zipField], $row[$countryField], $title, $description, 0,2);
@@ -300,7 +403,7 @@ class MapAdministrationController extends ActionController {
 	
 					// add a little info so users know what to do
 					$title = '';
-					$description = '<div class="description">'.$LANG->getLL('area_zoominfo_desc').'</div>';
+					$description = '<div class="description">'.$this->getLanguageService()->sL('area_zoominfo_desc').'</div>';
 	
 					// add a marker for this country and only show it between zoom levels 0 and 2.
 					$map->addMarkerByAddress(null, $row[$cityField], $row[$stateField], $row[$zipField], $row[$countryField], $title, $description, 3,7);
@@ -398,7 +501,7 @@ class MapAdministrationController extends ActionController {
 		$content = array();
 		$content[] = '<style type="text/css" media="screen">input[type=image] {border: none; background: none;}</style>';
 		$content[] = '<p style="margin-bottom:15px;">';
-		$content[] = $LANG->getLL('apiInstructions');
+		$content[] = $this->getLanguageService()->sL('apiInstructions');
 		$content[] = '</p>';
 	
 		$content[] = '<form action="" method="POST">';
@@ -419,12 +522,12 @@ class MapAdministrationController extends ActionController {
 			if($number != 0 && $index == 0) {
 				$content[] = '<h1>Existing Domains</h1>';
 				$content[] = '<p style="margin-bottom:15px;">';
-				$content[] = $LANG->getLL('alreadySavedDomains');
+				$content[] = $this->getLanguageService()->sL('alreadySavedDomains');
 				$content[] = '</p>';
 			} else if ($number == $index) {
 				$content[] = '<h1>Suggested Domains</h1>';
 				$content[] = '<p style="margin-bottom:15px;">';
-				$content[] = $LANG->getLL('suggestedDomains');
+				$content[] = $this->getLanguageService()->sL('suggestedDomains');
 				$content[] = '</p>';
 			}
 	
@@ -442,10 +545,10 @@ class MapAdministrationController extends ActionController {
 	
 			$content[] = '<input type="hidden" name="domain_'.$index.'" value="'. $key .'">';
 	
-			$content[] = '<div><label for="key_'. $index .'">'.$LANG->getLL('googleMapsBrowserApiKey').': </label>';
+			$content[] = '<div><label for="key_'. $index .'">'.$this->getLanguageService()->sL('googleMapsBrowserApiKey').': </label>';
 			$content[] = '<input style="width: 29em;" id="browserkey_'. $index .'" name="browserkey_'. $index .'" value="'.$valuebrowser.'" />';
 	
-			$content[] = '<label for="serverkey_'. $index .'">'.$LANG->getLL('googleMapsServerApiKey').': </label>';
+			$content[] = '<label for="serverkey_'. $index .'">'.$this->getLanguageService()->sL('googleMapsServerApiKey').': </label>';
 			$content[] = '<input style="width: 29em;" id="serverkey_'. $index .'" name="serverkey_'. $index .'" value="'.$valueserver.'" /></div>';
 	
 			$content[] = '</div>';
@@ -456,14 +559,14 @@ class MapAdministrationController extends ActionController {
 		$content[] = '<div class="domain-item" id="blank-domain" style="margin-bottom: 15px; display: none;">';
 		$content[] = '<div style="width: 35em;"><label style="display: none;" for="domain_'. $index .'">Domain: </label><input style="width: 12em;" id="domain_'. $index .'" name="domain_'. $index .'" value="" onfocus="this.value=\'\';"/> <input type="image" '.$this->getIcon($GLOBALS['BACK_PATH'],'gfx/garbage.gif','width="11" height="12"').' onclick="document.getElementById(\'key_'. $index .'\').value = \'\'; document.getElementById(\'blank-domain\').style.display =\'none\'; document.getElementById(\'adddomainbutton\').style.display = \'block\'; return false;" /></div>';
 	
-		$content[] = '<div><label for="browserkey_'. $index .'">'.$LANG->getLL('googleMapsBrowserApiKey').': </label>';
+		$content[] = '<div><label for="browserkey_'. $index .'">'.$this->getLanguageService()->sL('googleMapsBrowserApiKey').': </label>';
 		$content[] = '<input style="width: 29em;" id="browserkey_'. $index .'" name="browserkey_'. $index .'" value="" />';
-		$content[] = '<label for="serverkey_'. $index .'">'.$LANG->getLL('googleMapsServerApiKey').': </label>';
+		$content[] = '<label for="serverkey_'. $index .'">'.$this->getLanguageService()->sL('googleMapsServerApiKey').': </label>';
 		$content[] = '<input style="width: 29em;" id="serverkey_'. $index .'" name="serverkey_'. $index .'" value="" /></div>';
 	
 		$content[] = '</div>';
 	
-		$content[] = '<input type="submit" value="'.$LANG->getLL('submit').'"/>';
+		$content[] = '<input type="submit" value="'.$this->getLanguageService()->sL('submit').'"/>';
 		$content[] = '</form>';
 	
 		return implode(chr(10), $content);
@@ -482,10 +585,10 @@ class MapAdministrationController extends ActionController {
 		$batchGeocode->addAllTables();
 		$totalAddresses = $batchGeocode->getRecordCount();
 	
-		$content[] = '<h3>'.$LANG->getLL('batchGeocode').'</h3>';
-		$content[] = '<p>'.$LANG->getLL('batchInstructions').'</p>';
+		$content[] = '<h3>'.$this->getLanguageService()->sL('batchGeocode').'</h3>';
+		$content[] = '<p>'.$this->getLanguageService()->sL('batchInstructions').'</p>';
 	
-		$content[] = '<p style="margin-top:1em;">'.$LANG->getLL('batchTables').'</p>';
+		$content[] = '<p style="margin-top:1em;">'.$this->getLanguageService()->sL('batchTables').'</p>';
 		$content[] = '<ul>';
 		foreach($GLOBALS['TCA'] as $tableName => $tableContents) {
 			if($tableContents['ctrl']['EXT']['wec_map']['isMappable']) {
@@ -499,10 +602,10 @@ class MapAdministrationController extends ActionController {
 		$content[] =   '<div id="bar" style="width:300px; height:20px; border:1px solid black">';
 		$content[] =     '<div id="progress" style="width:0%; height:20px; background-color:red"></div>';
 		$content[] =   '</div>';
-		$content[] =   '<p>'.$LANG->getLL('processedStart').' <span id="processed">0</span> '.$LANG->getLL('processedMid').' '.$totalAddresses.'.</p>';
+		$content[] =   '<p>'.$this->getLanguageService()->sL('processedStart').' <span id="processed">0</span> '.$this->getLanguageService()->sL('processedMid').' '.$totalAddresses.'.</p>';
 		$content[] = '</div>';
 	
-		$content[] = '<input id="startGeocoding" type="submit" value="'.$LANG->getLL('startGeocoding').'">';
+		$content[] = '<input id="startGeocoding" type="submit" value="'.$this->getLanguageService()->sL('startGeocoding').'">';
 	
 		return implode(chr(10), $content);
 	}
@@ -534,12 +637,12 @@ class MapAdministrationController extends ActionController {
 	
 		$content[] = '<style type="text/css" media="screen">input[type=image] {border: none; background: none;}</style>';
 		$content[] = '<p style="margin-bottom:15px;">';
-		$content[] = $LANG->getLL('downloadInstructions');
+		$content[] = $this->getLanguageService()->sL('downloadInstructions');
 		$content[] = '</p>';
 	
 		$content[] = '<form action="" method="POST">';
 		$content[] = '<input name="cmd" type="hidden" value="downloadJS" />';
-		$content[] = '<input type="submit" value="'.$LANG->getLL('download').'"/>';
+		$content[] = '<input type="submit" value="'.$this->getLanguageService()->sL('download').'"/>';
 		$content[] = '</form>';
 	
 		return implode(chr(10), $content);
@@ -553,12 +656,12 @@ class MapAdministrationController extends ActionController {
 	protected function download($sourceUrl, $destFile)    {
 		global $LANG;
 	
-		$destDir = \TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:wec_map/Resources/Public/JavaScript/ContribJS/');
+		$destDir = \TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName('EXT:wec_map/Resources/Public/ContribJS/');
 	
 		// Get file and cancel if not existing/accessible
 		$remoteFileContent = \TYPO3\CMS\Core\Utility\GeneralUtility::getURL($sourceUrl);
 		if ($remoteFileContent === FALSE) {
-			return $LANG->getLL('downloadError') . $sourceUrl . '<br />';
+			return $this->getLanguageService()->sL('downloadError') . $sourceUrl . '<br />';
 		}
 	
 		// Create dir if not existing
@@ -571,7 +674,7 @@ class MapAdministrationController extends ActionController {
 		fwrite($handle, $remoteFileContent);
 		fclose($handle);
 	
-		return $LANG->getLL('downloadSuccess') . $destFile . '<br />';
+		return $this->getLanguageService()->sL('downloadSuccess') . $destFile . '<br />';
 	}
 	/**
 	 * @param string $icon
@@ -603,6 +706,84 @@ class MapAdministrationController extends ActionController {
 		$iconSize = \TYPO3\CMS\Core\Imaging\Icon::SIZE_SMALL;
 		return $this->iconFactory->getIcon($icon, $iconSize)->render();
 	}
-	
+    /**
+     * Returns LanguageService
+     *
+     * @return \TYPO3\CMS\Lang\LanguageService
+     */
+    public function getLanguageService()
+    {
+        return $GLOBALS['LANG'];
+    }
+
+    /**
+     * Try to resolve a supported locale based on the user settings
+     * take the configured locale dependencies into account
+     * so if the TYPO3 interface is tailored for a specific dialect
+     * the local of a parent language might be used
+     *
+     * @return string|null
+     */
+    protected function getInterfaceLocale()
+    {
+        $locale = null;
+        $languageChain = null;
+
+        if ($GLOBALS['BE_USER'] instanceof BackendUserAuthentication
+            && is_array($GLOBALS['BE_USER']->uc)
+            && array_key_exists('lang', $GLOBALS['BE_USER']->uc)
+            && !empty($GLOBALS['BE_USER']->uc['lang'])
+        ) {
+            $languageChain = $this->localeService->getLocaleDependencies(
+                $GLOBALS['BE_USER']->uc['lang']
+            );
+
+            array_unshift($languageChain, $GLOBALS['BE_USER']->uc['lang']);
+        }
+
+        // try to find a matching locale available for this plugins UI
+        // take configured locale dependencies into account
+        if ($languageChain !== null
+            && ($suitableLocales = array_intersect(
+                $languageChain,
+                $this->configuration['translations']['availableLocales']
+            )) !== false
+            && count($suitableLocales) > 0
+        ) {
+            $locale = array_shift($suitableLocales);
+        }
+
+        // if a locale couldn't be resolved try if an entry of the
+        // language dependency chain matches legacy mapping
+        if ($locale === null && $languageChain !== null
+            && ($suitableLanguageKeys = array_intersect(
+                $languageChain,
+                array_flip(
+                    $this->configuration['translations']['languageKeyToLocaleMapping']
+                )
+            )) !== false
+            && count($suitableLanguageKeys) > 0
+        ) {
+            $locale =
+                $this->configuration['translations']['languageKeyToLocaleMapping'][array_shift($suitableLanguageKeys)];
+        }
+
+        return $locale;
+    }
+    /**
+     * Get a CSRF token
+     *
+     * @param bool $tokenOnly Set it to TRUE to get only the token, otherwise including the &moduleToken= as prefix
+     * @return string
+     */
+    protected function getToken($tokenOnly = false)
+    {
+        $token = FormProtectionFactory::get()->generateToken('tools_WecMapTxwecmapM1', 'index');
+        if ($tokenOnly) {
+            return $token;
+        } else {
+            return '&moduleToken=' . $token;
+        }
+    }
 
 }
