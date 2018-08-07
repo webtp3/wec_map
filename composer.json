@@ -2,6 +2,17 @@
 	"name": "web-tp3/wec-map",
 	"description": "WEC Google Maps",
 	"type": "typo3-cms-extension",
+	"license": "GPL-2.0+",
+	"authors": [
+		{
+			"name": "Christian Technology Ministries International Inc.",
+			"email": "j.bartels@arcor.de"
+		},
+		{
+			"name": "Thomas Ruta",
+			"email": "email@thomasruta.de"
+		}
+	],
 	"autoload": {
 		"psr-4": {
 			"JBartels\\WecMap\\": "Classes/"
