@@ -14,7 +14,7 @@ $EM_CONF[$_EXTKEY] = array (
   'title' => 'WEC Map',
   'description' => 'Mapping extension that connects to geocoding databases and Google Maps API.',
   'category' => 'plugin',
-  'version' => '3.3.1',
+  'version' => '4.0.1',
   'state' => 'stable',
   'uploadfolder' => false,
   'createDirs' => '',
@@ -27,7 +27,7 @@ $EM_CONF[$_EXTKEY] = array (
     'depends' => 
     array (
       'php' => '5.5.0-0.0.0',
-      'typo3' => '7.6.0-7.6.99',
+      'typo3' => '7.6.0-8.9.99',
     ),
     'conflicts' => 
     array (
