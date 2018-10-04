@@ -420,10 +420,10 @@ include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/mod1/index.php'
 }
 
 
-// Make instance:
-$SOBE = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Module\MapAdministration\Module::class);
-$SOBE->init();
-$SOBE->main();
-$SOBE->printContent();
+//// Make instance:
+//$SOBE = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Module\MapAdministration\Module::class);
+//$SOBE->init();
+//$SOBE->main();
+//$SOBE->printContent();
 
 ?>

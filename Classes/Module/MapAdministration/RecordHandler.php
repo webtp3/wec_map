@@ -46,28 +46,28 @@ class RecordHandler {
 		$limit = null;
 		// Select rows:
 		$displayRows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('*','tx_wecmap_cache','', 'address', 'address', $limit);
-
-		$iconEdit = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-open', array(
-			'title' => 'hallo' . $LANG->getLL('editAddress'),
-			'alt' => 'welt' . $LANG->getLL('editAddress')
-			)
-		);
-		$iconSave = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-save', array(
-			'title' => $LANG->getLL('editAddress'),
-			'alt' => $LANG->getLL('editAddress')
-			)
-		);
-		$iconCancel = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-close', array(
-			'title' => $LANG->getLL('cancelUpdate'),
-			'alt' => $LANG->getLL('cancelUpdate')
-			)
-		);
-
-		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
-			'title' => $LANG->getLL('deleteAddress'),
-			'alt' => $LANG->getLL('deleteAddress')
-			)
-		);
+//
+//		$iconEdit = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-open', array(
+//			'title' => 'hallo' . $LANG->getLL('editAddress'),
+//			'alt' => 'welt' . $LANG->getLL('editAddress')
+//			)
+//		);
+//		$iconSave = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-save', array(
+//			'title' => $LANG->getLL('editAddress'),
+//			'alt' => $LANG->getLL('editAddress')
+//			)
+//		);
+//		$iconCancel = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-document-close', array(
+//			'title' => $LANG->getLL('cancelUpdate'),
+//			'alt' => $LANG->getLL('cancelUpdate')
+//			)
+//		);
+//
+//		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
+//			'title' => $LANG->getLL('deleteAddress'),
+//			'alt' => $LANG->getLL('deleteAddress')
+//			)
+//		);
 
 		$tablebody = '';
 		foreach($displayRows as $row) {
@@ -120,7 +120,7 @@ class RecordHandler {
 	function displaySearch() {
 		global $LANG;
 
-		$iconFilter = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon( 'actions-document-save' );
+		//$iconFilter = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon( 'actions-document-save' );
 
 		$content = '<div><input id="recordSearchbox" type="text" placeholder="'.$LANG->getLL('searchFilter').'" size="20"/><button id="resetSearchboxButton" style="display: none;">'.$LANG->getLL('clearFilter').'</button></div>';
 		return $content;
@@ -135,11 +135,12 @@ class RecordHandler {
 	 **/
 	function getTotalCountHeader() {
 		global $LANG;
-		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
-			'title' => $LANG->getLL('deleteCache'),
-			'alt' => $LANG->getLL('deleteCache')
-			)
-		);
+//		$iconDelete = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-edit-delete', array(
+//			'title' => $LANG->getLL('deleteCache'),
+//			'alt' => $LANG->getLL('deleteCache')
+//			)
+//		);
+        $iconDelete = "delete";
 		$content = $LANG->getLL('totalCachedAddresses') .
 			': <strong><span id="recordCount">?</span></strong><span id="deleteCache">' . $iconDelete . '</span>';
 

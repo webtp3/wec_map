@@ -314,8 +314,8 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin {
 							$map->handleOverlappingMarker( $marker, $overlappingMarkerLatDev, $overlappingMarkerLongDev );
 
 						// build parameters to pass to the hook
-						$params = array('table' => $table, 'data' => $data, 'markerObj' => &$marker, 'conf' => $tconf );
-						$this->processHook($params);
+						//$params = array('table' => $table, 'data' => $data, 'markerObj' => &$marker, 'conf' => $tconf );
+						//$this->processHook($params);
 
 						$this->addSidebarItem($marker, $data);
 						$this->addDirectionsMenu($marker);
@@ -373,8 +373,8 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin {
 							$map->handleOverlappingMarker( $marker, $overlappingMarkerLatDev, $overlappingMarkerLongDev );
 
 						// build parameters to pass to the hook
-						$params = array('table' => $table, 'data' => $data, 'markerObj' => &$marker, 'conf' => $tconf);
-						$this->processHook($params);
+						//$params = array('table' => $table, 'data' => $data, 'markerObj' => &$marker, 'conf' => $tconf);
+						//$this->processHook($params);
 
 						$this->addSidebarItem($marker, $data);
 						$this->addDirectionsMenu($marker);

@@ -103,3 +103,4 @@ plugin.tx_wecmap_pi2 {
 	output 				< tx_wecmap_api.output
 	_CSS_DEFAULT_STYLE  < tx_wecmap_api._CSS_DEFAULT_STYLE
 }
+plugin.tx_wecmap_pi2.view < plugin.tx_wecmap.view

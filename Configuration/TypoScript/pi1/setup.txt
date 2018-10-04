@@ -89,3 +89,4 @@ plugin.tx_wecmap_pi1 {
 		country =		
 	}
 }
+plugin.tx_wecmap_pi1.view < plugin.tx_wecmap.view

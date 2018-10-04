@@ -81,3 +81,4 @@ plugin.tx_wecmap_pi3 {
 	# this is simply to check if this template is included
 	templateIncluded = 1
 }
+plugin.tx_wecmap_pi3.view < plugin.tx_wecmap.view

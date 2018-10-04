@@ -41,6 +41,12 @@ namespace JBartels\WecMap\Utility;
  */
 class Backend {
 
+    public function processCmdmap_postProcess($command, $table, $id, $value, \TYPO3\CMS\Core\DataHandling\DataHandler &$pObj) {
+        echo '<pre>';
+        var_dump($command);
+        echo '<pre>';
+        die();
+    }
 	static function processDatamap_postProcessFieldArray($status, $table, $id, &$fieldArray, &$reference) {
 
 		$tca = &$GLOBALS['TCA'][$table]['ctrl']['EXT']['wec_map'];
