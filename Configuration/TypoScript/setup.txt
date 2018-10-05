@@ -1,4 +1,5 @@
-plugin.tx_wecmap.settings {
+plugin.tx_wecmap{
+    settings {
 
         templateRootPath = EXT:wec_map/Resources/Private/Templates/
         partialRootPath = EXT:wec_map/Resources/Private/Partials/

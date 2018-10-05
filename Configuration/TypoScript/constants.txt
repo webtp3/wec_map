@@ -1,0 +1,33 @@
+# cat=wec_map: advanced;
+plugin.wec_map{
+    view{
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template root (FE)
+        templateRootPath = EXT:wec_maps/Resources/Private/Templates/Page/
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template partials (FE)
+        partialRootPath = EXT:wec_map/Resources/Private/Partials/Page/
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template layouts (FE)
+        layoutRootPath = EXT:wec_map/Resources/Private/Layouts/Page/
+    }
+
+    persistence{
+        # cat=plugin.tx_wec_map//a; type=string; label=Default storage PID
+        storagePid =
+    }
+}
+
+# cat=wec_map: advanced;
+module.wec_map{
+    view{
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template layouts (BE)
+        templateRootPath = EXT:wec_map/Resources/Private/Backend/Templates/
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template root (BE)
+        partialRootPath = EXT:wec_map/Resources/Private/Partials/
+        # cat=plugin.tx_wec_map/file; type=string; label=Path to template layouts (BE)
+        layoutRootPath = EXT:wec_map/Resources/Private/Layouts/
+    }
+
+    persistence{
+        # cat=plugin.tx_wec_map//a; type=string; label=Default storage PID
+        storagePid =
+    }
+}

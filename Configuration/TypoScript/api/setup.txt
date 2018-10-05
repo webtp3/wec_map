@@ -1,39 +1,53 @@
-plugin.tx_wecmap.settings {
+plugin.tx_wecmap {
 
-	templateRootPath = EXT:wec_map/Resources/Private/Templates/
-	partialRootPath = EXT:wec_map/Resources/Private/Partials/
-	layoutRootPath = EXT:wec_map/Resources/Private/Layouts/
-}
-view {
-	templateRootPaths.0 = EXT:wec_map/Resources/Private/Templates/
-	templateRootPaths.1 = {$plugin.wec_map.view.templateRootPath}
-	partialRootPaths.0 = EXT:wec_map/Resources/Private/Partials/
-	partialRootPaths.1 = {$plugin.wec_map.view.partialRootPath}
-	layoutRootPaths.0 = EXT:wec_map/Resources/Private/Layouts/
-	layoutRootPaths.1 = {$plugin.wec_map.view.layoutRootPath}
-}
-persistence {
-	storagePid = {$plugin.wec_map.settings.storagePid}
-	recursive = 1
-}
-features {
-	#skipDefaultArguments = 1
-	#rewrittenPropertyMapper = 1
-}
 
-mvc {
-	callDefaultActionIfActionCantBeResolved = 1
-}
+	settings {
+
+
+		templateRootPath = {$plugin.wec_map.view.templateRootPath}
+		partialRootPath = {$plugin.wec_map.view.partialRootPath}
+		layoutRootPath = {$plugin.wec_map.view.layoutRootPath}
+
+	}
+
+	view {
+		templateRootPaths.0 = EXT:wec_map/Resources/Private/Templates/
+		templateRootPaths.1 = {$plugin.wec_map.view.templateRootPath}
+		partialRootPaths.0 = EXT:wec_map/Resources/Private/Partials/
+		partialRootPaths.1 = {$plugin.wec_map.view.partialRootPath}
+		layoutRootPaths.0 = EXT:wec_map/Resources/Private/Layouts/
+		layoutRootPaths.1 = {$plugin.wec_map.view.layoutRootPath}
+
+	}
+	
+	persistence {
+		storagePid = {$plugin.wec_map.settings.storagePid}
+		recursive =
+
+
+	}
+	features {
+		#skipDefaultArguments = 1
+		#rewrittenPropertyMapper = 1
+
+		}
+
+	mvc {
+		callDefaultActionIfActionCantBeResolved = 1
+	}
 }
 module.tx_wecmap {
-settings < plugin.tx_wecmap.settings
-persistence < plugin.tx_wecmap.persistence
-view < plugin.tx_wecmap.view
-view {
-templateRootPath = EXT:wec_map/Resources/Private/Backend/Templates/
-partialRootPath = EXT:wec_map/Resources/Private/Partials/
-layoutRootPath = EXT:wec_map/Resources/Private/Layouts/
-}
+	settings < plugin.tx_wecmap.settings
+	persistence < plugin.tx_wecmap.persistence
+	view < plugin.tx_wecmap.view
+	view {
+		templateRootPaths.0 = EXT:wec_map/Resources/Private/Templates/Backend/
+		templateRootPaths.1 = {$module.wec_map.view.templateRootPath}
+		partialRootPaths.0 = EXT:wec_map/Resources/Private/Partials/
+		partialRootPaths.1 = {$module.wec_map.view.partialRootPath}
+		layoutRootPaths.0 = EXT:wec_map/Resources/Private/Layouts/
+		layoutRootPaths.1 = {$module.wec_map.view.layoutRootPath}
+	}
 }
 
 tx_wecmap_api {
