@@ -1,7 +1,7 @@
 # cat=basic; type=boolean; label=Enable map in FE user records
 feUserRecordMap = 1
 # cat=basic; type=boolean; label=Enable Backend Module
-BackendModule = 0
+BackendModule = 1
 # cat=basic; type=boolean; label=Enable Geocoding Status
 geocodingStatus = 1
 # cat=basic; type=input; label=Default country: Default country to be used for address lookup if no country is given

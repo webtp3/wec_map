@@ -57,7 +57,7 @@ return;
 function addRowClass(r,i) {
 //### todo
 return;
-	r = TYPO3.jQuery(r)
+	r = TYPO3.jQuery(r);
 	r.removeClassName(SortableTable.options.rowEvenClass);
 	r.removeClassName(SortableTable.options.rowOddClass);
 	r.addClassName(((i+1)%2 == 0 ? SortableTable.options.rowEvenClass : SortableTable.options.rowOddClass));

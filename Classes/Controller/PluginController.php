@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is part of the web-tp3/wec_map.
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
+
 namespace JBartels\WecMap\Controller;
 
 /***
@@ -30,27 +37,26 @@ class PluginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionControlle
      */
     protected function initializeView(\TYPO3\CMS\Extbase\Mvc\View\ViewInterface $view)
     {
-      //  $this->view = $view;
+        //  $this->view = $view;
         // Typoscript-Konfiguration fuer entsprechendes Template holen
         $templateRootPath = \TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName($this->settings['templateRootPath']);
 
         // Template-Pfad festlegen bzw. entsprechend anpassen
         $templatePathAndFilename = $templateRootPath . 'Plugin/Pi1.html';
         if (\TYPO3\CMS\Core\Utility\VersionNumberUtility::convertVersionNumberToInteger(\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::getExtensionVersion('extbase')) < 8007000) {
-
             $this->view->setTemplatePathAndFilename($templatePathAndFilename);
         } else {
             $layoutRootPath = \TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName($this->settings['layoutRootPath']);
             $partialRootPath = \TYPO3\CMS\Core\Utility\GeneralUtility::getFileAbsFileName($this->settings['partialRootPath']);
             //   $this->view->setRenderingContext()
-            $this->view->setLayoutRootPaths(array($layoutRootPath));
-            $this->view->setPartialRootPaths(array($partialRootPath));
+            $this->view->setLayoutRootPaths([$layoutRootPath]);
+            $this->view->setPartialRootPaths([$partialRootPath]);
             $this->view->setTemplatePathAndFilename($templatePathAndFilename);
         }
     }
     /**
      * action list
-     * 
+     *
      * @return void
      */
     public function listAction()
@@ -59,8 +65,8 @@ class PluginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionControlle
 
         $this->conf = $this->configurationManager->getConfiguration(\TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK);
 
-        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\DataTableMap::class)->main($cObj,$this->conf);
-        $this->view->assign('Plugins', $Plugins );
+        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\DataTableMap::class)->main($cObj, $this->conf);
+        $this->view->assign('Plugins', $Plugins);
     }
     /**
      * action list
@@ -73,8 +79,8 @@ class PluginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionControlle
 
         $this->conf = $this->configurationManager->getConfiguration(\TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK);
 
-        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\SimpleMap::class)->main($cObj,$this->conf);
-        $this->view->assign('Plugins', $Plugins );
+        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\SimpleMap::class)->main($cObj, $this->conf);
+        $this->view->assign('Plugins', $Plugins);
     }
     /**
      * action list
@@ -87,8 +93,8 @@ class PluginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionControlle
 
         $this->conf = $this->configurationManager->getConfiguration(\TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK);
 
-        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\FEUserMap::class)->main($cObj,$this->conf);
-        $this->view->assign('Plugins', $Plugins );
+        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\FEUserMap::class)->main($cObj, $this->conf);
+        $this->view->assign('Plugins', $Plugins);
     }
     /**
      * action list
@@ -101,11 +107,10 @@ class PluginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionControlle
 
         $this->conf = $this->configurationManager->getConfiguration(\TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK);
 
-        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\DataTableMap::class)->main($cObj,$this->conf);
+        $Plugins = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Plugin\DataTableMap::class)->main($cObj, $this->conf);
         $this->view->assign('Plugins', $Plugins);
-       // $this->view->assign('output', $this->conf["output"] );
+        // $this->view->assign('output', $this->conf["output"] );
 
         //$this->view->assign('Plugins', $Plugins );
-
     }
 }

@@ -1,221 +1,198 @@
 <?php
-/***************************************************************
-* Copyright notice
-*
-* (c) 2005-2009 Christian Technology Ministries International Inc.
-* (c) 2010-2017 J. Bartels
-* All rights reserved
-*
-* This file is part of the Web-Empowered Church (WEC)
-* (http://WebEmpoweredChurch.org) ministry of Christian Technology Ministries
-* International (http://CTMIinc.org). The WEC is developing TYPO3-based
-* (http://typo3.org) free software for churches around the world. Our desire
-* is to use the Internet to help offer new life through Jesus Christ. Please
-* see http://WebEmpoweredChurch.org/Jesus.
-*
-* You can redistribute this file and/or modify it under the terms of the
-* GNU General Public License as published by the Free Software Foundation;
-* either version 2 of the License, or (at your option) any later version.
-*
-* The GNU General Public License can be found at
-* http://www.gnu.org/copyleft/gpl.html.
-*
-* This file is distributed in the hope that it will be useful for ministry,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* This copyright notice MUST APPEAR in all copies of the file!
-***************************************************************/
+
+/*
+ * This file is part of the web-tp3/wec_map.
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
 
 namespace JBartels\WecMap\Module\MapAdministration;
 
 /**
  * Performs autmated geocoding for any address information.
  *
- * @author Web-Empowered Church Team <map@webempoweredchurch.org>
- * @package TYPO3
- * @subpackage tx_wecmap
  */
-class BatchGeocode {
+class BatchGeocode
+{
+    public $tables;
+    public $geocodedAddresses;
+    public $geocodeLimit;
+    public $processedAddresses;
 
-	var $tables;
-	var $geocodedAddresses;
-	var $geocodeLimit;
-	var $processedAddresses;
+    /**
+     * Default constructor.
+     *
+     * @return		none
+     */
+    public function __construct($limit=10)
+    {
+        $this->tables = [];
+        $this->geocodedAddresses = 0;
+        $this->processedAddresses = 0;
+        $this->geocodeLimit = $limit;
+    }
 
+    /**
+     * Adds a specific tables to the list of tables that should be geocoded.
+     *
+     * @param		string		The name of the table.
+     * @return		none
+     */
+    public function addTable($table)
+    {
+        $this->tables[] = $table;
+    }
 
-	/**
-	 * Default constructor.
-	 *
-	 * @return		none
-	 */
-	function __construct($limit=10) {
-		$this->tables = array();
-		$this->geocodedAddresses = 0;
-		$this->processedAddresses = 0;
-		$this->geocodeLimit = $limit;
-	}
+    /**
+     * Traverses the TCA and adds all mappable tables to the list of tables that
+     * should be geocoded.
+     *
+     * @return		none
+     */
+    public function addAllTables()
+    {
+        foreach ($GLOBALS['TCA'] as $tableName => $tableContents) {
+            if ($tableContents['ctrl']['EXT']['wec_map']['isMappable']) {
+                $this->tables[] = $tableName;
+            }
+        }
+    }
 
-	/**
-	 * Adds a specific tables to the list of tables that should be geocoded.
-	 *
-	 * @param		string		The name of the table.
-	 * @return		none
-	 */
-	function addTable($table) {
-		$this->tables[] = $table;
-	}
+    /**
+     * Main function to initiate geocoding of all address-related tables.
+     *
+     * @return		none
+     */
+    public function geocode()
+    {
+        if (is_array($this->tables)) {
+            foreach ($this->tables as $table) {
+                if ($this->stopGeocoding()) {
+                    return;
+                } else {
+                    $this->geocodeTable($table);
+                }
+            }
+        }
+    }
 
+    /**
+     * Performs geocoding on an individual table.
+     *
+     * @param		string		Name of the table.
+     * @return		none
+     */
+    public function geocodeTable($table)
+    {
+        $addressFields = [
+            'street'  => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'street'),
+            'city'    => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'city'),
+            'state'   => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'state'),
+            'zip'     => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'zip'),
+            'country' => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'country'),
+        ];
 
-	/**
-	 * Traverses the TCA and adds all mappable tables to the list of tables that
-	 * should be geocoded.
-	 *
-	 * @return		none
-	 */
-	function addAllTables() {
+        $where = '1=1' . \TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
+        $result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $table, $where);
+        while ($row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+            if ($this->stopGeocoding()) {
+                return;
+            } else {
+                $this->geocodeRecord($row, $addressFields);
+            }
+        }
+    }
 
-		foreach($GLOBALS['TCA'] as $tableName => $tableContents) {
-			if($tableContents['ctrl']['EXT']['wec_map']['isMappable']) {
-				$this->tables[] = $tableName;
-			}
-		}
-	}
+    /**
+     * Performs geocoding on an individual row.
+     *
+     * @param		array		The associative array of the record to be geocoded.
+     * @param		array		The array mapping address elements to individual fields in the record.
+     * @return		none
+     */
+    public function geocodeRecord($row, $addressFields)
+    {
+        $street  = $addressFields['street']  > '' ? $row[$addressFields['street']]  : '';
+        $city    = $addressFields['city']    > '' ? $row[$addressFields['city']]    : '';
+        $state   = $addressFields['state']   > '' ? $row[$addressFields['state']]   : '';
+        $zip     = $addressFields['zip']     > '' ? $row[$addressFields['zip']]     : '';
+        $country = $addressFields['country'] > '' ? $row[$addressFields['country']] : '';
 
-	/**
-	 * Main function to initiate geocoding of all address-related tables.
-	 *
-	 * @return		none
-	 */
-	function geocode() {
-		if ( is_array( $this->tables ) ) {
-			foreach($this->tables as $table) {
-				if($this->stopGeocoding()) {
-					return;
-				} else {
-					$this->geocodeTable($table);
-				}
-			}
-		}
-	}
+        // increment total count
+        $this->processedAddresses++;
+        \JBartels\WecMap\Utility\Cache::lookupWithCallback($street, $city, $state, $zip, $country, false, $this);
+    }
 
-	/**
-	 * Performs geocoding on an individual table.
-	 *
-	 * @param		string		Name of the table.
-	 * @return		none
-	 */
-	function geocodeTable($table) {
-		$addressFields = array(
-			'street'  => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'street'),
-			'city'    => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'city'),
-			'state'   => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'state'),
-			'zip'     => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'zip'),
-			'country' => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'country'),
-		);
+    /**
+     * Callback function for tx_wecmap_cache::lookup().  Called when a lookup
+     * is not cached and must use external geocoding services. Increments an
+     * internal counter of how many external lookups we've made.
+     *
+     * @return		none
+     */
+    public function callback_lookupThroughGeocodeService()
+    {
+        $this->geocodedAddresses++;
+    }
 
-		$where = "1=1".\TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
-		$result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $table, $where);
-		while($row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+    /**
+     * Utility function to determine whether batch geocoding should be stopped.
+     *
+     * @return		bool		True/false whethr batch geocoding should be stopped.
+     */
+    public function stopGeocoding()
+    {
+        if ($this->geocodedAddresses >= $this->geocodeLimit) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-			if($this->stopGeocoding()) {
-				return;
-			} else {
-				$this->geocodeRecord($row, $addressFields);
-			}
-		}
-	}
+    /**
+     * Getter function for the total number of addresses processed.
+     *
+     * @return		The total number of addresses processed.  This includes both
+     *				cached and non-cached.
+     */
+    public function getProcessedAddresses()
+    {
+        return $this->processedAddresses;
+    }
 
+    /**
+     * Getter function for the total number of addresses geocoded.
+     *
+     * @return		The total number of addresses geocoded by external services.
+     *				This does not include cached addresses.
+     */
+    public function getGeocodedAddresses()
+    {
+        return $this->geocodedAddresses;
+    }
 
-	/**
-	 * Performs geocoding on an individual row.
-	 *
-	 * @param		array		The associative array of the record to be geocoded.
-	 * @param		array		The array mapping address elements to individual fields in the record.
-	 * @return		none
-	 */
-	function geocodeRecord($row, $addressFields) {
-		$street  = $addressFields['street']  > '' ? $row[$addressFields['street']]  : '';
-		$city    = $addressFields['city']    > '' ? $row[$addressFields['city']]    : '';
-		$state   = $addressFields['state']   > '' ? $row[$addressFields['state']]   : '';
-		$zip     = $addressFields['zip']     > '' ? $row[$addressFields['zip']]     : '';
-		$country = $addressFields['country'] > '' ? $row[$addressFields['country']] : '';
+    /**
+     * Count of all records containing address-related data.
+     *
+     * @return		int		The count of all records with addresses.
+     */
+    public function getRecordCount()
+    {
+        $recordCount = 0;
 
-		// increment total count
-		$this->processedAddresses++;
-		\JBartels\WecMap\Utility\Cache::lookupWithCallback($street, $city, $state, $zip, $country, false, $this);
-	}
+        if (is_array($this->tables)) {
+            foreach ($this->tables as $table) {
+                $where = '1=1' . \TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
+                $result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*)', $table, $where);
+                $row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
+                $recordCount += $row['COUNT(*)'];
+            }
+        }
 
-	/**
-	 * Callback function for tx_wecmap_cache::lookup().  Called when a lookup
-	 * is not cached and must use external geocoding services. Increments an
-	 * internal counter of how many external lookups we've made.
-	 *
-	 * @return		none
-	 */
-	function callback_lookupThroughGeocodeService() {
-		$this->geocodedAddresses++;
-	}
-
-
-	/**
-	 * Utility function to determine whether batch geocoding should be stopped.
-	 *
-	 * @return		boolean		True/false whethr batch geocoding should be stopped.
-	 */
-	function stopGeocoding() {
-		if($this->geocodedAddresses >= $this->geocodeLimit) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Getter function for the total number of addresses processed.
-	 *
-	 * @return		The total number of addresses processed.  This includes both
-	 *				cached and non-cached.
-	 */
-	function getProcessedAddresses() {
-		return $this->processedAddresses;
-	}
-
-
-	/**
-	 * Getter function for the total number of addresses geocoded.
-	 *
-	 * @return		The total number of addresses geocoded by external services.
-	 *				This does not include cached addresses.
-	 */
-	function getGeocodedAddresses() {
-		return $this->geocodedAddresses;
-	}
-
-	/**
-	 * Count of all records containing address-related data.
-	 *
-	 * @return		integer		The count of all records with addresses.
-	 */
-	function getRecordCount() {
-		$recordCount = 0;
-
-		if ( is_array( $this->tables ) ) {
-			foreach($this->tables as $table) {
-				$where = "1=1".\TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
-				$result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*)', $table, $where);
-				$row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
-				$recordCount += $row['COUNT(*)'];
-			}
-		}
-
-		return $recordCount;
-	}
+        return $recordCount;
+    }
 }
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/class.tx_wecmap_batchgeocode.php'])	{
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/class.tx_wecmap_batchgeocode.php']);
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/class.tx_wecmap_batchgeocode.php']) {
+    include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/class.tx_wecmap_batchgeocode.php']);
 }
-
-?>

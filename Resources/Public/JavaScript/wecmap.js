@@ -232,7 +232,7 @@ function WecMapGoogleV3( mapId )
 		rotateControlOptions: { },
 		zoomControl: false,
 		zoomControlOptions: { }
-	}
+	};
 	this.kmlArray = [];
 	this.markers = [];
 	this.markerArray = [];
@@ -306,7 +306,7 @@ WecMapGoogleV3.prototype.drawMap = function( strID )
 		WecMapGoogleV3_setupMarkers( that );
 		google.maps.event.removeListener(listener);
   	});
-}
+};
 
 function WecMapGoogleV3_setupMarkers( mapObj)
 {
@@ -367,7 +367,7 @@ WecMapGoogleV3.prototype.setMapTypeId = function( MapTypeId )
 	this.Options.mapTypeId = MapTypeId;
 	if ( this.map )
 		this.map.setMapTypeId(MapTypeId);
-}
+};
 
 WecMapGoogleV3.prototype.addMapLayer = function( mapTypeId, mapType, strCopyright )
 {
@@ -386,7 +386,7 @@ WecMapGoogleV3.prototype.addMapLayer = function( mapTypeId, mapType, strCopyrigh
 	this.copyrights[mapTypeId] = collection;
 */
 	this.copyrights[mapTypeId] = strCopyright;
-}
+};
 
 WecMapGoogleV3.prototype.addKML = function( url )
 {
@@ -395,7 +395,7 @@ WecMapGoogleV3.prototype.addKML = function( url )
 	if ( this.map )
 		layer.setMap( this.map );
 	return layer;
-}
+};
 
 WecMapGoogleV3.prototype.addMarker = function( markerId, latlng, iconId, dirTitle, groupId, address)
 {
@@ -443,7 +443,7 @@ WecMapGoogleV3.prototype.addMarker = function( markerId, latlng, iconId, dirTitl
 
 	return marker;
 
-}
+};
 
 
 WecMapGoogleV3.prototype.setDraggable = function( groupId, markerId, flag )
@@ -463,13 +463,13 @@ WecMapGoogleV3.prototype.setDraggable = function( groupId, markerId, flag )
 				map.onDragMarkerEnd( marker, mouseEvent );
 		} );
 	}
-}
+};
 
 
 WecMapGoogleV3.prototype.enableOverlappingMarkerManager = function( flag )
 {
 	this.overlappingMarkerManagerEnabled = flag;
-}
+};
 
 // http://google-maps-utility-library-v3.googlecode.com/svn/tags/markermanager/1.0/docs/reference.html
 WecMapGoogleV3.prototype.addMarkersToManager = function( groupId, minZoom, maxZoom )
@@ -484,7 +484,7 @@ WecMapGoogleV3.prototype.addMarkersToManager = function( groupId, minZoom, maxZo
 		this.markerManager.addMarkers(this.markers[groupId], minZoom, maxZoom);
 		this.markerManager.refresh();
 	}
-}
+};
 
 WecMapGoogleV3.prototype.addIcon = function( iconID, imagepath, shadowpath, size, shadowSize, anchor, infoAnchor )
 {
@@ -495,7 +495,7 @@ WecMapGoogleV3.prototype.addIcon = function( iconID, imagepath, shadowpath, size
 		   };
 
 	this.icons[ iconID ] = icon;
-}
+};
 
 // jumps to a specific marker (determined by groupId and markerId) and zoomlevel on the map
 WecMapGoogleV3.prototype.jumpTo = function(groupId, markerId, zoom)
@@ -507,7 +507,7 @@ WecMapGoogleV3.prototype.jumpTo = function(groupId, markerId, zoom)
 	this.map.panTo( marker.getPosition() );
 	this.openInfoWindow( groupId, markerId );
 	return false;
-}
+};
 
 WecMapGoogleV3.prototype.addBubble = function( groupId, markerId, labels, content)
 {
@@ -520,7 +520,7 @@ WecMapGoogleV3.prototype.addBubble = function( groupId, markerId, labels, conten
 		labels: labels,
 		content: content
 	};
-}
+};
 
 WecMapGoogleV3.prototype.openInfoWindow = function( groupId, markerId ) {
 	var marker = this.markers[groupId][markerId];
@@ -542,21 +542,21 @@ WecMapGoogleV3.prototype.openInfoWindow = function( groupId, markerId ) {
 			this.infoWindow.setContent(this.bubbleData[groupId][markerId].content[0] );
 		this.infoWindow.open(this.map, marker );
 	}
-}
+};
 
 WecMapGoogleV3.prototype.closeInfoWindow = function( groupId, markerId ) {
 	if ( this.infoWindow )
 	{
 		this.infoWindow.close();
 	}
-}
+};
 
 WecMapGoogleV3.prototype.openInitialInfoWindow = function( groupId, markerId ) {
-	this.openInitialInfoWindowMarker = new Array();
+	this.openInitialInfoWindowMarker = [];
 	this.openInitialInfoWindowMarker['groupId'] = groupId;
 	this.openInitialInfoWindowMarker['markerId'] = markerId;
 	return true;
-}
+};
 
 
 WecMapGoogleV3.prototype.createDirections = function( directionsDivId ) {
@@ -566,7 +566,7 @@ WecMapGoogleV3.prototype.createDirections = function( directionsDivId ) {
 		return true;
 	}
 	return false;
-}
+};
 
 WecMapGoogleV3.prototype.setDirections = function( fromAddr, toAddr, dirTitle, travelMode) {
 
@@ -594,7 +594,7 @@ WecMapGoogleV3.prototype.setDirections = function( fromAddr, toAddr, dirTitle, t
 			// if directions-DIV doesn't exist, create and append it
 			var newDiv = document.createElement('div');
 		        newDiv.id = this.directionsDivId;
-		        var map = document.getElementById( this.mapId )
+		        var map = document.getElementById( this.mapId );
         		map.parentNode.insertBefore(newDiv,map.nextSibling);
         	}
 		this.directionsRenderer.setPanel( document.getElementById( this.directionsDivId ) );
@@ -632,7 +632,7 @@ WecMapGoogleV3.prototype.setDirections = function( fromAddr, toAddr, dirTitle, t
 		}
 	});
 	return true;
-}
+};
 
 // opens up the directions tab window to a marker
 WecMapGoogleV3.prototype.openDirectionsToHere = function( groupId, markerId ) {
@@ -646,7 +646,7 @@ WecMapGoogleV3.prototype.openDirectionsToHere = function( groupId, markerId ) {
 	this.autocomplete = new google.maps.places.Autocomplete(input);
 	this.autocomplete.bindTo('bounds', this.map);
 	return false;
-}
+};
 
 // opens up the directions tab window from a marker
 WecMapGoogleV3.prototype.openDirectionsFromHere = function( groupId, markerId ) {
@@ -660,7 +660,7 @@ WecMapGoogleV3.prototype.openDirectionsFromHere = function( groupId, markerId ) 
 	this.autocomplete = new google.maps.places.Autocomplete(input);
 	this.autocomplete.bindTo('bounds', this.map);
 	return false;
-}
+};
 
 // resize and recenter map for use in hidden containers accordeon, modal box, etc.
 WecMapGoogleV3.prototype.resizeMap = function () {
@@ -669,7 +669,7 @@ WecMapGoogleV3.prototype.resizeMap = function () {
 	google.maps.event.trigger(this.map, 'resize');
 	this.map.setCenter(this.center);
 	this.map.setZoom(this.zoom);
-}
+};
 
 // compatibility functions for V2->V3
 
@@ -685,7 +685,7 @@ WecMapGoogleV3.prototype.addMapType = function( MapTypeId )
 	this.Options.mapTypeControlOptions.mapTypeIds.push( MapTypeId );
 	if ( this.map )
 		this.map.setOptions( this.Options );
-}
+};
 
 WecMapGoogleV3.prototype.setCenter = function( LatLng, Zoom, MapTypeId )
 {
@@ -701,7 +701,7 @@ WecMapGoogleV3.prototype.setCenter = function( LatLng, Zoom, MapTypeId )
 		if ( MapTypeId )
 			map.setMapTypeId( MapTypeId );
 	}
-}
+};
 
 function GZoomControl() // Enable Zoom control
 {
@@ -709,7 +709,7 @@ function GZoomControl() // Enable Zoom control
 	{
 		options.zoomControl = true;
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -734,7 +734,7 @@ function GScaleControl() // - a simpler large pan/zoom control. Appears in the t
 	{
 		options.scaleControl = true;
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -744,7 +744,7 @@ function GSmallZoomControl3D() // deprecated
 	{
 		options.zoomControl = true;
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -758,7 +758,7 @@ function GOverviewMapControl() // deprecated
 	this.modifyOptions = function( options )
 	{
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -769,7 +769,7 @@ function GMapTypeControl() // - buttons that let the user toggle between map typ
 		options.mapTypeControl = true;
 		options.mapTypeControlOptions.style = google.maps.MapTypeControlStyle.HORIZONTAL_BAR;
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -780,7 +780,7 @@ function GHierarchicalMapTypeControl() // - buttons that let the user toggle bet
 		options.mapTypeControl = true;
 		options.mapTypeControlOptions.style = google.maps.MapTypeControlStyle.DROPDOWN_MENU;
 		return options;
-	}
+	};
 	return this;
 }
 
@@ -789,5 +789,5 @@ WecMapGoogleV3.prototype.addControl = function( V2Control )
 	this.Options = V2Control.modifyOptions( this.Options );
 	if ( this.map )
 		this.map.setOptions( this.Options );
-}
+};
 
