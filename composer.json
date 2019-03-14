@@ -29,6 +29,12 @@
 		"typo3/class-alias-loader": "^1.0"
 
 	},
+	"require-dev": {
+		"friendsofphp/php-cs-fixer": "^2.0",
+		"nimut/testing-framework": "^1.0 || ^2.0 || ^3.0 || ^4.0",
+		"web-tp3/cag_tests":"^1.2"
+
+	},
 	"replace": {
 		"wec_map": "self.version",
 		"typo3-ter/wec-map": "self.version",
