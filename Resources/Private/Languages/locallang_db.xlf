@@ -102,6 +102,21 @@
 			<trans-unit id="tx_wecmap_external.url" xml:space="preserve">
 				<source>URL</source>
 			</trans-unit>
+			<trans-unit id="sys_domain.GoogleAPITab" xml:space="preserve">
+				<source>Google Maps API</source>
+			</trans-unit>
+			<trans-unit id="sys_domain.browserKey" xml:space="preserve">
+				<source>Browser-Key</source>
+			</trans-unit>
+			<trans-unit id="sys_domain.staticKey" xml:space="preserve">
+				<source>Static-Key</source>
+			</trans-unit>
+			<trans-unit id="sys_domain.serverKey" xml:space="preserve">
+				<source>Server-Key</source>
+			</trans-unit>
+			<trans-unit id="sys_domain.GoogleAPI" xml:space="preserve">
+				<source>Google Maps API</source>
+			</trans-unit>
 			<trans-unit id="unit" xml:space="preserve">
 				<source>Unit: </source>
 			</trans-unit>
@@ -243,6 +258,9 @@
 			</trans-unit>
 			<trans-unit id="tt_content.pi_flexform.userGroup" xml:space="preserve">
 				<source>Filter by FE user group (default: all)</source>
+			</trans-unit>
+			<trans-unit id="tt_content.pi_flexform.userGroupsOrMode" xml:space="preserve">
+				<source>Combine FE user group by OR (default: AND)</source>
 			</trans-unit>
 			<trans-unit id="tt_content.pi_flexform.zip" xml:space="preserve">
 				<source>ZIP</source>

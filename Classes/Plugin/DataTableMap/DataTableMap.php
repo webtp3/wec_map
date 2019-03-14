@@ -134,14 +134,27 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
 
         /* Create the Map object */
         /** @var \JBartels\WecMap\MapService\Google\Map $map */
-        $map = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\MapService\Google\Map::class, $conf['apiKey'], $width, $height, $centerLat, $centerLong, $zoomLevel, $mapName);
+        $map = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\MapService\Google\Map::class, null, $width, $height, $centerLat, $centerLong, $zoomLevel, $mapName);
 
         // get kml urls for each included record
         if ($kml > 0) {
-            $where = 'uid IN (' . $GLOBALS['TYPO3_DB']->cleanIntList($kml) . ')';
-            $res = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('url', 'tx_wecmap_external', $where);
-            foreach ($res as $key => $url) {
-                $link = trim($url['url']);
+            $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                ->getQueryBuilderForTable('tx_wecmap_external');
+            $statement = $queryBuilder
+                ->select('url')
+                ->from('tx_wecmap_external')
+                ->where(
+                    $queryBuilder->expr()->in(
+                        'uid',
+                        $queryBuilder->createNamedParameter(
+                            \TYPO3\CMS\Core\Utility\GeneralUtility::intExplode(',', $kml, true),
+                            \TYPO3\CMS\Core\Database\Connection::PARAM_INT_ARRAY
+                        )
+                    )
+                )
+                ->execute();
+            while ($record = $statement->fetch()) {
+                $link = trim($record['url']);
                 $oldAbs = $GLOBALS['TSFE']->absRefPrefix;
                 $GLOBALS['TSFE']->absRefPrefix = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL');
                 $linkConf = [
@@ -239,7 +252,7 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
 
         if (!empty($pid)) {
             $pidList = $this->pi_getPidList($pid, $recursive);
-            $pidWhere = 'pid IN (' . $GLOBALS['TYPO3_DB']->cleanIntList($pidList) . ')';
+            $pidWhere = 'pid IN (' . $pidList . ')';
         } else {
             $pidWhere = '1=1';
         }
@@ -380,7 +393,6 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
             }
         }
 
-        // $map->addKML('http://kml.lover.googlepages.com/my-vacation-photos.kml');
         // gather all the content together
         $content = [];
         $content['map'] = $map->drawMap();
@@ -412,9 +424,7 @@ class DataTableMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
             $hookReference = null;
             foreach ($hooks as $hookFunction) {
                 \TYPO3\CMS\Core\Utility\GeneralUtility::callUserFunction($hookFunction, $hookParameters, $hookReference);
-                if (TYPO3_DLOG) {
-                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Called hook. Markers may have been changed.', 'wec_map_api', 2);
-                }
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Called hook. Markers may have been changed.', 'wec_map_api', 2);
             }
         }
     }

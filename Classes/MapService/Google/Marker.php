@@ -57,15 +57,15 @@ class Marker extends \JBartels\WecMap\MapService\Marker
             $this->lang = $GLOBALS['TSFE']->config['config']['language'];
         }
         if ($this->lang == 'default') {
-            $this->lang = 'de';
+            $this->lang = 'en';
         } elseif (empty($this->lang)) {
-            $this->lang = 'de';
+            $this->lang = 'en';
         }
 
         // load language file
         $this->langService = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Lang\LanguageService::class);
         $this->langService->init($this->lang);
-        $this->LOCAL_LANG = $this->langService->getParserFactory()->getParsedData('EXT:wec_map/Resources/Private/Languages/MapService/Google/locallang.xlf', $this->lang, '', 2);
+        $this->LOCAL_LANG = $this->langService->includeLLFile('EXT:wec_map/Resources/Private/Languages/MapService/Google/locallang.xlf', false);
 
         $this->index = $index;
         $this->tabLabels = [$this->getLL('info')];
@@ -222,11 +222,7 @@ WecMap.addBubble( "' . $this->mapName . '", ' . $this->groupId . ', ' . $this->i
         $this->tabLabels[] = $tabLabel;
         $this->title[] = $title;
         $this->description[] = $description;
-        // TODO: devlog start
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': manually adding tab to marker ' . $this->index . ' with title ' . $title, 'wec_map_api');
-        }
-        // devlog end
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': manually adding tab to marker ' . $this->index . ' with title ' . $title, 'wec_map_api');
     }
 
     /**
@@ -248,12 +244,18 @@ WecMap.addBubble( "' . $this->mapName . '", ' . $this->groupId . ', ' . $this->i
                     $zipField     = \JBartels\WecMap\Utility\Shared::getAddressField($table, 'zip');
                     $countryField = \JBartels\WecMap\Utility\Shared::getAddressField($table, 'country');
 
-                    $select = $streetField . ', ' . $cityField . ', ' . $stateField . ', ' . $zipField . ', ' . $countryField;
-                    $selectArray = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $select, true);
-                    $select = implode(',', $selectArray);
+                    $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                        ->getQueryBuilderForTable('fe_users');
+                    $statement = $queryBuilder
+                        ->select('*')
+                        ->from('fe_users')
+                        ->where(
+                            $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($feuser_id, \PDO::PARAM_INT))
+                        )
+                        ->execute();
+                    $row = $statement->fetch();
 
-                    $rows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($select, 'fe_users', '`uid`=' . intval($feuser_id));
-                    return $rows[0][$streetField] . ', ' . $rows[0][$cityField] . ', ' . $rows[0][$stateField] . ' ' . $rows[0][$zipField] . ', ' . $rows[0][$countryField];
+                    return $row[$streetField] . ', ' . $row[$cityField] . ', ' . $row[$stateField] . ' ' . $row[$zipField] . ', ' . $row[$countryField];
                 }
             } else {
             }
@@ -268,9 +270,7 @@ WecMap.addBubble( "' . $this->mapName . '", ' . $this->groupId . ', ' . $this->i
      **/
     public function getClickJS()
     {
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding marker ' . $this->index . '(' . strip_tags($this->title[0]) . strip_tags($this->description[0]) . ') to sidebar', 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding marker ' . $this->index . '(' . strip_tags($this->title[0]) . strip_tags($this->description[0]) . ') to sidebar', 'wec_map_api');
         return 'WecMap.jumpTo(\'' . $this->mapName . '\', ' . $this->groupId . ', ' . $this->index . ', ' . $this->calculateClickZoom() . ');';
     }
 

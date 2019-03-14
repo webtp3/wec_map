@@ -8,6 +8,9 @@
 
 namespace JBartels\WecMap\Utility;
 
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
 /**
  * General purpose backend class for the WEC Map extension.  This class
  * provides user functions for displaying geocode status and maps within
@@ -94,13 +97,11 @@ class Backend
 
         $street  = self::getFieldValue('street', $PA);
         $city    = self::getFieldValue('city', $PA);
-        $latitude  = self::getFieldValue('latitude', $PA);
-        $longitude    = self::getFieldValue('longitude', $PA);
         $state   = self::getFieldValue('state', $PA);
         $zip     = self::getFieldValue('zip', $PA);
         $country = self::getFieldValue('country', $PA);
 
-        return self::drawGeocodeStatus($street, $city, $state, $zip, $country, $latitude, $longitude);
+        return self::drawGeocodeStatus($street, $city, $state, $zip, $country);
     }
 
     /**
@@ -162,54 +163,50 @@ class Backend
      * @param	string	Country portion of the address.
      * @return	string	HTML output of current geocoding status and editing form.
      */
-    public static function drawGeocodeStatus($street, $city, $state, $zip, $country, $latitude = 0, $longitude = 0)
+    public static function drawGeocodeStatus($street, $city, $state, $zip, $country)
     {
         global $LANG;
-
         $LANG->includeLLFile('EXT:wec_map/Resources/Private/Languages/locallang_db.xlf');
 
-        if ($latitude > 0  && $longitude > 0) {
+        /* Normalize the address before we try to insert it or anything like that */
+        \JBartels\WecMap\Utility\Cache::normalizeAddress($street, $city, $state, $zip, $country);
 
-            /* Normalize the address before we try to insert it or anything like that */
-            \JBartels\WecMap\Utility\Cache::normalizeAddress($street, $city, $state, $zip, $country);
+        // if there is no info about the user, return different status
+        if (!$city) {
+            return $LANG->getLL('geocodeNoAddress');
+        }
 
-            // if there is no info about the user, return different status
-            if (!$city) {
-                return $LANG->getLL('geocodeNoAddress');
-            }
+        /* Grab the lat and long that were posted */
+        $newlat = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_lat');
+        $newlong = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_long');
 
-            /* Grab the lat and long that were posted */
-            $newlat = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_lat');
-            $newlong = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_long');
+        $origlat = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_original_lat');
+        $origlong = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_original_long');
 
-            $origlat = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_original_lat');
-            $origlong = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('wec_map_original_long');
+        /* If the new lat/long are empty, delete our cached entry */
+        if (empty($newlat) && empty($newlong) && !empty($origlat) && !empty($origlong)) {
+            \JBartels\WecMap\Utility\Cache::delete($street, $city, $state, $zip, $country);
+        }
 
-            /* If the new lat/long are empty, delete our cached entry */
-            if (empty($newlat) && empty($newlong) && !empty($origlat) && !empty($origlong)) {
-                \JBartels\WecMap\Utility\Cache::delete($street, $city, $state, $zip, $country);
-            }
+        /* If the lat/long changed, then insert a new entry into the cache or update it. */
+        if ((($newlat != $origlat) or ($newlong != $origlong)) and (!empty($newlat) && !empty($newlong)) and (is_numeric($newlat) && is_numeric($newlong))) {
+            \JBartels\WecMap\Utility\Cache::insert($street, $city, $state, $zip, $country, $newlat, $newlong);
+        }
 
-            /* If the lat/long changed, then insert a new entry into the cache or update it. */
-            if ((($newlat != $origlat) or ($newlong != $origlong)) and (!empty($newlat) && !empty($newlong)) and (is_numeric($newlat) && is_numeric($newlong))) {
-                \JBartels\WecMap\Utility\Cache::insert($street, $city, $state, $zip, $country, $newlat, $newlong);
-            }
+        /* Get the lat/long and status from the geocoder */
+        $latlong = \JBartels\WecMap\Utility\Cache::lookup($street, $city, $state, $zip, $country);
+        $status = \JBartels\WecMap\Utility\Cache::status($street, $city, $state, $zip, $country);
 
-            /* Get the lat/long and status from the geocoder */
-            $latlong = \JBartels\WecMap\Utility\Cache::lookup($street, $city, $state, $zip, $country);
-            $status = \JBartels\WecMap\Utility\Cache::status($street, $city, $state, $zip, $country);
-
-            switch ($status) {
-                case -1:
-                    $status = $LANG->getLL('geocodeFailed');
-                    break;
-                case 0:
-                    $status = $LANG->getLL('geocodeNotPerformed');
-                    break;
-                case 1:
-                    $status = $LANG->getLL('geocodeSuccessful');
-                    break;
-            }
+        switch ($status) {
+            case -1:
+                $status = $LANG->getLL('geocodeFailed');
+                break;
+            case 0:
+                $status = $LANG->getLL('geocodeNotPerformed');
+                break;
+            case 1:
+                $status = $LANG->getLL('geocodeSuccessful');
+                break;
         }
 
         $form = '<label for="wec_map_lat">' . $LANG->getLL('latitude') . '</label> <input id="wec_map_lat" name="wec_map_lat" value="' . htmlspecialchars($latlong['lat']) . '" />
@@ -299,6 +296,7 @@ class Backend
 
         $description = $lat . ',' . $long;
 
+        $apiKey = '';
         /** @var \tx_wecmap_map_google $map */
         $map =  \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\MapService\Google\Map::class, $apiKey, $width, $height);
         $marker = $map->addMarkerByLatLong($lat, $long, $description);
@@ -313,7 +311,6 @@ class Backend
         $map->enableDirections(true);
 
         $content = $map->drawMap();
-
         return $content;
     }
 
@@ -416,13 +413,14 @@ class Backend
      */
     public static function getExtConf($key)
     {
-        /* Make an instance of the Typoscript parser */
-        /** @var \TYPO3\CMS\Core\TypoScript\Parser\TypoScriptParser $tsParser */
-        $tsParser =  \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\TypoScript\Parser\TypoScriptParser::class);
+        if (\TYPO3\CMS\Core\Utility\VersionNumberUtility::convertVersionNumberToInteger(TYPO3_version) >= 9000000) {
+            $extConf = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('wec_map');
+        } else {
+            $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
+        }
 
         /* Unserialize the TYPO3_CONF_VARS and extract the value using the parser */
-        $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
-        $valueArray = $tsParser->getVal($key, $extConf);
+        $valueArray = $extConf[ $key ];
 
         if (is_array($valueArray)) {
             $returnValue = $valueArray[0];

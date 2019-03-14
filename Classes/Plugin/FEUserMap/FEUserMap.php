@@ -61,6 +61,9 @@ class FEUserMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
         $userGroups = $this->pi_getFFvalue($piFlexForm, 'userGroups', 'default');
         empty($userGroups) ? $userGroups = $this->cObj->stdWrap($conf['userGroups'], $conf['userGroups.']):null;
 
+        $userGroupsOrMode = $this->pi_getFFvalue($piFlexForm, 'userGroupsOrMode', 'default');
+        empty($userGroupsOrMode) ? $userGroupsOrMode = $this->cObj->stdWrap($conf['userGroupsOrMode'], $conf['userGroupsOrMode.']):false;
+
         $pid = $this->pi_getFFvalue($piFlexForm, 'pid', 'default');
         empty($pid) ? $pid = $this->cObj->stdWrap($conf['pid'], $conf['pid.']):null;
 
@@ -135,10 +138,23 @@ class FEUserMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
 
         // get kml urls for each included record
         if (!empty($kml)) {
-            $where = 'uid IN (' . $GLOBALS['TYPO3_DB']->cleanIntList($kml) . ')';
-            $res = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('url', 'tx_wecmap_external', $where);
-            foreach ($res as $key => $url) {
-                $link = trim($url['url']);
+            $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                ->getQueryBuilderForTable('tx_wecmap_external');
+            $statement = $queryBuilder
+                ->select('url')
+                ->from('tx_wecmap_external')
+                ->where(
+                    $queryBuilder->expr()->in(
+                        'uid',
+                        $queryBuilder->createNamedParameter(
+                            \TYPO3\CMS\Core\Utility\GeneralUtility::intExplode(',', $kml, true),
+                            Connection::PARAM_INT_ARRAY
+                        )
+                    )
+                )
+                ->execute();
+            while ($record = $statement->fetch()) {
+                $link = trim($record['url']);
                 $oldAbs = $GLOBALS['TSFE']->absRefPrefix;
                 $GLOBALS['TSFE']->absRefPrefix = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL');
                 $linkConf = [
@@ -149,6 +165,15 @@ class FEUserMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
                 $GLOBALS['TSFE']->absRefPrefix = $oldAbs;
                 $map->addKML($link);
             }
+            /*
+                        $fileRepository = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Core\\Resource\\FileRepository');
+                        $pi_uid = $this->cObj->data['uid'];
+                        $fileObjects = $fileRepository->findByRelation('tt_content', 'kmlFile', $pi_uid);
+                        // get file object information
+                        foreach ($fileObjects as $key => $value) {
+                            $map->addKML( $value->getPublicUrl() );
+                        }
+            */
         }
 
         // evaluate map controls based on configuration
@@ -285,44 +310,53 @@ class FEUserMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
         $zipField     = \JBartels\WecMap\Utility\Shared::getAddressField('fe_users', 'zip');
         $countryField = \JBartels\WecMap\Utility\Shared::getAddressField('fe_users', 'country');
 
-        // start where clause
-        $where = '1=1';
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable('fe_users');
+        $queryBuilder
+            ->select('*')
+            ->from('fe_users');
 
         // if a user group was set, make sure only those users from that group
         // will be selected in the query
-        if ($userGroups) {
-            $where .= \JBartels\WecMap\Utility\Shared::listQueryFromCSV('usergroup', $userGroups, 'fe_users');
-        }
+        $whereUserGroups = $userGroups ?
+            \JBartels\WecMap\Utility\Shared::getListQueryFromCSV('usergroup', $userGroups, $queryBuilder, $userGroupsOrMode ? 'OR' : 'AND') :
+            null;
 
         // if a storage folder pid was specified, filter by that
-        if ($pid) {
-            $where .= \JBartels\WecMap\Utility\Shared::listQueryFromCSV('pid', $pid, 'fe_users', 'OR');
-        }
+        $wherePid = $pid ?
+            \JBartels\WecMap\Utility\Shared::getListQueryFromCSV('pid', $pid, $queryBuilder, 'OR') :
+            null;
+
+        // Build resulting WHERE-clause
+        $queryBuilder->where($whereUserGroups, $wherePid);
 
         // additional condition set by TypoScript
         $additionalWhere = $this->cObj->stdWrap($conf['table.']['additionalWhere'], $conf['table.']['additionalWhere.']);
         if ($additionalWhere) {
-            $where .= 'AND (' . $additionalWhere . ') ';
+            $queryBuilder->andWhere($additionalWhere);
         }
-
-        // filter out records that shouldn't be shown, e.g. deleted, hidden
-        $where .= $this->cObj->enableFields('fe_users');
 
         // sorting
         $orderBy = $this->cObj->stdWrap($conf['table.']['orderBy'], $conf['table.']['orderBy.']);
+        if ($orderBy) {
+            \JBartels\WecMap\Utility\Shared::setOrderBy($queryBuilder, $orderBy);
+        }
 
         // limit
         $limit = $this->cObj->stdWrap($conf['table.']['limit'], $conf['table.']['limit.']);
-
-        /* Select all frontend users */
-        $result = $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', 'fe_users', $where, '', $orderBy, $limit);
+        if ($limit) {
+            \JBartels\WecMap\Utility\Shared::setLimit($queryBuilder, $limit);
+        }
 
         // create country and zip code array to keep track of which country and state we already added to the map.
         // the point is to create only one marker per country on a higher zoom level to not
         // overload the map with all the markers, and do the same with zip codes.
         $countries = [];
         $cities = [];
-        while (($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result))) {
+
+        /* Select all frontend users */
+        $statement = $queryBuilder->execute();
+        while ($row = $statement->fetch()) {
 
             // add check for country and use different field if empty
             // @TODO: make this smarter with TCA or something
@@ -364,16 +398,23 @@ class FEUserMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
                     // add a little info so users know what to do
                     $title = \JBartels\WecMap\Utility\Shared::render(['name' => 'Info'], $title_conf);
 
-                    $countWhere = $cityField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($row[$cityField], 'fe_users');
+                    $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                        ->getQueryBuilderForTable('fe_users');
+                    $queryBuilder
+                        ->count('*')
+                        ->from('fe_users');
+
+                    // start where clause
+                    $countWhere = [
+                        $queryBuilder->expr()->eq($cityField, $queryBuilder->createNamedParameter($row[$cityField]))
+                    ];
                     if ($zipField) {
-                        $countWhere .= ' AND ' . $zipField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($row[$zipField], 'fe_users');
+                        $countWhere[] = $queryBuilder->expr()->eq($zipField, $queryBuilder->createNamedParameter($row[$zipField]));
                     }
                     if ($additionalWhere) {
-                        $countWhere .= 'AND (' . $additionalWhere . ') ';
+                        $queryBuilder->andWhere('(' . $additionalWhere . ')');
                     }
-
-                    $count = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('count(*)', 'fe_users', $countWhere);
-                    $count = $count[0]['count(*)'];
+                    $count = $queryBuilder->execute()->fetchColumn(0);
 
                     // extra processing if private is turned on
                     if ($private) {

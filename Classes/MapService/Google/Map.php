@@ -8,6 +8,10 @@
 
 namespace JBartels\WecMap\MapService\Google;
 
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\PathUtility;
+
 /**
  * Map implementation for the Google Maps mapping service.
  *
@@ -17,8 +21,7 @@ class Map extends \JBartels\WecMap\MapService\Map
     public $lat;
     public $long;
     public $zoom;
-    /** @var $markers array */
-    public $markers =[];
+    public $markers;
     public $width;
     public $height;
     public $mapName;
@@ -33,7 +36,7 @@ class Map extends \JBartels\WecMap\MapService\Map
     public $showInfoOnLoad;
     public $maxAutoZoom = 15;
     public $static = false;
-    public $key = null;
+
     // array to hold the different Icons
     public $icons;
 
@@ -43,11 +46,7 @@ class Map extends \JBartels\WecMap\MapService\Map
     public $langService;
 
     public $markerClassName = 'JBartels\\WecMap\\MapService\\Google\\Marker';
-    /**
-     *
-     * @var \TYPO3\CMS\Core\Page\PageRenderer;
-     */
-    public $pageRenderer = null;
+
     /**
      * Class constructor.  Creates javscript array.
      * @access	public
@@ -62,7 +61,7 @@ class Map extends \JBartels\WecMap\MapService\Map
         $this->js = [];
         $this->markers = [];
         $this->kml = [];
-        $this->key = $key;
+
         // array to hold the different Icons
         $this->icons = [];
 
@@ -93,16 +92,15 @@ class Map extends \JBartels\WecMap\MapService\Map
             $this->lang = $GLOBALS['TSFE']->config['config']['language'];
         }
         if ($this->lang == 'default') {
-            $this->lang = 'de';
+            $this->lang = 'en';
         } elseif (empty($this->lang)) {
-            $this->lang = 'de';
+            $this->lang = 'en';
         }
 
         // load language file
         $this->langService = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Lang\LanguageService::class);
         $this->langService->init($this->lang);
-        $this->LOCAL_LANG = $this->langService->getParserFactory()->getParsedData('EXT:wec_map/Resources/Private/Languages/MapService/Google/locallang.xlf', $this->lang, '', 2);
-        $this->pageRenderer =  \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Page\PageRenderer::class);
+        $this->LOCAL_LANG = $this->langService->includeLLFile('EXT:wec_map/Resources/Private/Languages/MapService/Google/locallang.xlf', false);
     }
 
     public function getLL($index)
@@ -122,9 +120,7 @@ class Map extends \JBartels\WecMap\MapService\Map
      **/
     public function addControl($name)
     {
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding control ' . $name, 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding control ' . $name, 'wec_map_api');
         switch ($name) {
             case 'zoom':
             case 'largeMap':	// deprecated
@@ -152,9 +148,7 @@ class Map extends \JBartels\WecMap\MapService\Map
 //				break;
 
             default:
-                if (TYPO3_DLOG) {
-                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': ' . $name . '  not supported for addControl()', 'wec_map_api');
-                }
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': ' . $name . '  not supported for addControl()', 'wec_map_api');
                 break;
         }
     }
@@ -182,22 +176,18 @@ class Map extends \JBartels\WecMap\MapService\Map
      */
     public function drawMap()
     {
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': starting map drawing', 'wec_map_api');
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': domain: ' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('HTTP_HOST'), 'wec_map_api');
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': map type: ' . $this->type, 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': starting map drawing', 'wec_map_api', [
+            'domain' => \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('HTTP_HOST'),
+            'maptype' => $this->type
+        ]);
 
         $hasThingsToDisplay = $this->hasThingsToDisplay();
         $hasHeightWidth = $this->hasHeightWidth();
 
         // make sure we have markers to display and an API key
-        $domainmgr = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Utility\DomainMgr::class);
-        if ($this->key == null) {
-            $browserKey = $domainmgr->getBrowserKey();
-        } else {
-            $browserKey = $this->key;
-        }
+        $domainmgr = \JBartels\WecMap\Utility\DomainMgr::getInstance();
+        $browserKey = $domainmgr->getBrowserKey();
+
         if ($hasThingsToDisplay && $hasHeightWidth && $browserKey) {
 
             // auto center and zoom if necessary
@@ -212,56 +202,58 @@ class Map extends \JBartels\WecMap\MapService\Map
                 return $htmlContent;
             }
 
-            $scheme = 'https://';//(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 'https://' : 'http://');
+            $scheme = (\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 'https://' : 'http://');
             // get the correct API URL
-            $apiURL = $scheme . 'maps.googleapis.com/maps/api/js?language=' . $this->lang . '&libraries=places&callback=tp3_app.initialize';
-            $apiURL = $domainmgr->addKeyToUrl($apiURL, $browserKey, false);
+            $apiURL = $scheme . 'maps.googleapis.com/maps/api/js?language=' . $this->lang . '&libraries=places';
+            $apiURL = $domainmgr->addKeyToUrl($apiURL, $browserKey);
+
+            $siteRelPath = PathUtility::stripPathSitePrefix(\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('wec_map'));
 
             if (\JBartels\WecMap\Utility\Backend::getExtConf('useOwnJS')) {
-                $mmURL  = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map') . 'Resources/Public/JavaScript/ContribJS/markermanager.js';
-                $ibURL  = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map') . 'Resources/Public/JavaScript/ContribJS/infobubble.js';
-                $omURL  = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map') . 'Resources/Public/JavaScript/ContribJS/oms.min.js';
+                $mmURL  = $siteRelPath . 'Resources/Public/JavaScript/ContribJS/markermanager.js';
+                $ibURL  = $siteRelPath . 'Resources/Public/JavaScript/ContribJS/infobubble.js';
+                $omURL  = $siteRelPath . 'Resources/Public/JavaScript/ContribJS/oms.min.js';
             } else {
-                $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
+                $extConf = $this->getExtConf();
                 $mmURL  = $scheme . $extConf['mmURL'];
                 $ibURL  = $scheme . $extConf['ibURL'];
                 $omURL  = $scheme . $extConf['omURL'];
             }
 
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': loading API from URL: ' . $apiURL, 'wec_map_api');
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': loading API from URL: ' . $apiURL, 'wec_map_api');
 
             /* If we're in the frontend, use TSFE.  Otherwise, include JS manually. */
             $jsDir = \JBartels\WecMap\Utility\Backend::getExtConf('jsDir');
             if (empty($jsDir)) {
-                $jsDir = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map') . 'Resources/Public/JavaScript/';
+                $jsDir = $siteRelPath . 'Resources/Public/JavaScript/';
             }
             $jsFile  = $jsDir . 'wecmap.js';
             $jsFile2 = $jsDir . 'copyrights.js';
             $jsFile3 = $jsDir . 'wecmap_backend.js';
 
             if (TYPO3_MODE == 'FE') {
-                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_apiURL', $apiURL, 'text/javascript', true, false, '', false, '|', true, '');
-                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_mmURL', $mmURL, 'text/javascript', true, false, '', false, '|', true, '');
-                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_ibURL', $ibURL, 'text/javascript', true, false, '', false, '|', true, '');
-                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_omURL', $omURL, 'text/javascript', true, false, '', false, '|', true, '');
-                $this->pageRenderer->addJsFooterLibrary('wec_map_jsFile', $jsFile, 'text/javascript', true, false, '', false, '|', true, '');
-                $this->pageRenderer->addJsFooterLibrary('wec_map_jsFile2', $jsFile2, 'text/javascript', true, false, '', false, '|', true, '');
+                $GLOBALS['TSFE']->additionalHeaderData['wec_map_googleMaps'] = '<script src="' . $apiURL . '" type="text/javascript"></script>'
+                                                                             . '<script src="' . $mmURL . '" type="text/javascript"></script>'
+                                                                             . '<script src="' . $ibURL . '" type="text/javascript"></script>'
+                                                                             . '<script src="' . $omURL . '" type="text/javascript"></script>'
+                                                                             ;
+                $GLOBALS['TSFE']->additionalHeaderData['wec_map'] = ($jsFile  ? '<script src="' . $jsFile . '" type="text/javascript"></script>' : '')
+                                                                  . ($jsFile2 ? '<script src="' . $jsFile2 . '" type="text/javascript"></script>' : '')
+                                                                  ;
             } else {
-                $htmlContent .= '<script defer async="false" src="' . $apiURL . '" type="text/javascript"></script>';
+                $htmlContent .= '<script src="' . $apiURL . '" type="text/javascript"></script>';
                 if (\JBartels\WecMap\Utility\Backend::getExtConf('useOwnJS')) {
-                    $htmlContent .= '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $mmURL . '" type="text/javascript"></script>';
-                    $htmlContent .= '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $ibURL . '" type="text/javascript"></script>';
-                    $htmlContent .= '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $omURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $mmURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $ibURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $omURL . '" type="text/javascript"></script>';
                 } else {
-                    $htmlContent .= '<script defer async="false" src="' . $mmURL . '" type="text/javascript"></script>';
-                    $htmlContent .= '<script defer async="false" src="' . $ibURL . '" type="text/javascript"></script>';
-                    $htmlContent .= '<script defer async="false" src="' . $omURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . $mmURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . $ibURL . '" type="text/javascript"></script>';
+                    $htmlContent .= '<script src="' . $omURL . '" type="text/javascript"></script>';
                 }
-                $htmlContent .= ($jsFile  ? '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile . '" type="text/javascript"></script>' : '')
-                              . ($jsFile2 ? '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile2 . '" type="text/javascript"></script>' : '')
-                              . ($jsFile3 ? '<script defer async="false" src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile3 . '" type="text/javascript"></script>' : '')
+                $htmlContent .= ($jsFile  ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile . '" type="text/javascript"></script>' : '')
+                              . ($jsFile2 ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile2 . '" type="text/javascript"></script>' : '')
+                              . ($jsFile3 ? '<script src="' . \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $jsFile3 . '" type="text/javascript"></script>' : '')
                               ;
             }
 
@@ -280,9 +272,7 @@ class Map extends \JBartels\WecMap\MapService\Map
             $jsContent[] = $this->js_icons();
             if (is_array($this->groups)) {
                 foreach ($this->groups as $key => $group) {
-                    if (TYPO3_DLOG) {
-                        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding ' . $group->getMarkerCount() . ' markers from group ' . $group->id, 'wec_map_api');
-                    }
+                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': adding ' . $group->getMarkerCount() . ' markers from group ' . $group->id, 'wec_map_api');
                     $jsContent = array_merge($jsContent, $group->drawMarkerJS());
                     $jsContent[] = '';
                 }
@@ -293,27 +283,21 @@ class Map extends \JBartels\WecMap\MapService\Map
             $jsContent[] = $this->js_loadCalls();
             $jsContent[] = $this->js_drawMapEnd();
 
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': finished map drawing', 'wec_map_api');
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': finished map drawing', 'wec_map_api');
 
             // get our content out of the array into a string
             $jsContentString = implode(chr(10), $jsContent);
 
             // then return it
-            $this->pageRenderer->addJsFooterInlineCode('wec_map_googleMaps_jsFile', $jsContentString);
-
-            return $htmlContent;
+            return $htmlContent . \TYPO3\CMS\Core\Utility\GeneralUtility::wrapJS($jsContentString);
         } elseif (!$hasThingsToDisplay) {
             $error = '<p>' . $this->getLL('error_nothingToDisplay') . '</p>';
         } elseif (!$hasHeightWidth) {
             $error = '<p>' . $this->getLL('error_noHeightWidth') . '</p>';
         } elseif (!$browserKey) {
-            $error = '<p>' . $this->getLL($lang, 'error_noBrowserKey') . '</p>';
+            $error = '<p>' . $this->getLL('error_noBrowserKey') . '</p>';
         }
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': finished map drawing with errors', 'wec_map_api', 2);
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': finished map drawing with errors', 'wec_map_api', 2);
         return $error;
     }
 
@@ -376,8 +360,8 @@ class Map extends \JBartels\WecMap\MapService\Map
         } else {
             $url = $scheme . 'maps.googleapis.com/maps/api/staticmap?size=' . $this->width . 'x' . $this->height . '&maptype=' . $this->type . '&markers=' . urlencode($markers);
         }
-        $domainmgr = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Utility\DomainMgr::class);
-        $url = $domainmgr->addKeyToUrl($url, $domainmgr->getBrowserKey(), true);
+        $domainmgr = \JBartels\WecMap\Utility\DomainMgr::getInstance();
+        $url = $domainmgr->addKeyToUrl($url, $domainmgr->getBrowserKey(), $domainmgr->getStaticKey());
         return '<img class="tx-wecmap-api-staticmap" alt="' . $alt . '" src="' . $url . '" />';
     }
     /**
@@ -465,8 +449,16 @@ class Map extends \JBartels\WecMap\MapService\Map
         $countryfield = \JBartels\WecMap\Utility\Shared::getAddressField($table, 'country');
 
         // get address from db for this record
-        $record = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('*', $table, 'uid=' . intval($uid));
-        $record = $record[0];
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable($table);
+        $statement = $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT))
+            )
+            ->execute();
+        $record = $statement->fetch();
 
         $street = $record[$streetfield];
         $city 	= $record[$cityfield];
@@ -512,17 +504,17 @@ class Map extends \JBartels\WecMap\MapService\Map
         if ($lat != '' && $long != '') {
             $group = $this->addGroup($minzoom, $maxzoom);
             $marker = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                                      $this->getMarkerClassName(),
-                                      $group->getMarkerCount(),
-                                      $lat,
-                                      $long,
-                                      $title,
-                                      $description,
-                                      $this->prefillAddress,
-                                      $tabLabels,
-                                      '0xFF0000',
-                                      '0xFFFFFF',
-                                      $iconID
+                $this->getMarkerClassName(),
+                $group->getMarkerCount(),
+                $lat,
+                $long,
+                $title,
+                $description,
+                $this->prefillAddress,
+                $tabLabels,
+                '0xFF0000',
+                '0xFFFFFF',
+                $iconID
             );
             $marker->setMinZoom($minzoom);
             $marker->setMapName($this->mapName);
@@ -624,7 +616,7 @@ function InitWecMapGoogleV3Labels() {
 	WecMap.labels.OSM_bike = ' . json_encode($this->getLL('OSM-bike')) . ';
 	WecMap.labels.OSM_bike_alt = ' . json_encode($this->getLL('OSM-bike-alt')) . ';
 	WecMap.labels.locale =  ' . json_encode($this->lang) . ';
-	// error messages
+	/* error messages */
 	WecMap.labels.INVALID_REQUEST = ' . json_encode($this->getLL('INVALID_REQUEST')) . ';
 	WecMap.labels.MAX_WAYPOINTS_EXCEEDED = ' . json_encode($this->getLL('MAX_WAYPOINTS_EXCEEDED')) . ';
 	WecMap.labels.NOT_FOUND = ' . json_encode($this->getLL('NOT_FOUND')) . ';
@@ -650,8 +642,8 @@ function InitWecMapGoogleV3Labels() {
      */
     public function js_drawMapStart()
     {
-        $js =  'var WECInit= function () {
-			
+        $js =  'google.maps.event.addDomListener(window,"load", function () {
+if ( !window["WecMap"] )
 	WecMap = createWecMap();
 WecMap.init();
 InitWecMapGoogleV3Labels();
@@ -671,7 +663,7 @@ WecMap.createMap("' . $this->mapName . '" );';
      */
     public function js_drawMapEnd()
     {
-        return '	WecMap.drawMap( "' . $this->mapName . '" );	}';
+        return '	WecMap.drawMap( "' . $this->mapName . '" );	} );';
     }
 
     /**
@@ -752,10 +744,11 @@ WecMap.createMap("' . $this->mapName . '" );';
     public function js_icons()
     {
         /* If we're in the backend, get an absolute path.  Frontend can use a relative path. */
+        $siteRelPath = PathUtility::stripPathSitePrefix(\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('wec_map'));
         if (TYPO3_MODE=='BE') {
-            $path = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map');
+            $path = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . $siteRelPath;
         } else {
-            $path = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::siteRelPath('wec_map');
+            $path = $siteRelPath;
         }
         // add default-icon
         $this->addMarkerIcon([
@@ -782,7 +775,7 @@ WecMap.createMap("' . $this->mapName . '" );';
     public function js_initialOpenInfoWindow()
     {
         $markers = reset($this->markers);
-        if (is_array($markers)  && $this->showInfoOnLoad) {
+        if (count($markers) == 1 && $this->showInfoOnLoad) {
             foreach ($this->groups as $key => $group) {
                 foreach ($group->markers as $marker) {
                     return $marker->getInitialOpenInfoWindowJS();  // return 1st marker
@@ -826,9 +819,7 @@ WecMap.createMap("' . $this->mapName . '" );';
 
         // process center
         if (!isset($this->lat) or !isset($this->long)) {
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': setting center to ' . $lat . ', ' . $long, 'wec_map_api');
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': setting center to ' . $lat . ', ' . $long, 'wec_map_api');
             $this->setCenter($lat, $long);
         }
 
@@ -846,10 +837,11 @@ WecMap.createMap("' . $this->mapName . '" );';
             $hookReference = null;
             foreach ($hooks as $hookFunction) {
                 \TYPO3\CMS\Core\Utility\GeneralUtility::callUserFunction($hookFunction, $hookParameters, $hookReference);
-                if (TYPO3_DLOG) {
-                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Called hook. Potentially new lat/long/zoom', 'wec_map_api', 2);
-                    \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Lat: ' . $this->lat . ' Long: ' . $this->long . ' Zoom: ' . $this->zoom, 'wec_map_api', 2);
-                }
+                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Called hook. Potentially new lat/long/zoom', 'wec_map_api', 2, [
+                    Lat => $this->lat,
+                    Long => $this->long,
+                    Zoom => $this->zoom
+                ]);
             }
         }
     }
@@ -875,9 +867,7 @@ WecMap.createMap("' . $this->mapName . '" );';
         if ($zoom > $this->maxAutoZoom) {
             $zoom = $this->maxAutoZoom;
         }
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': set zoom ' . $zoom, 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': set zoom ' . $zoom, 'wec_map_api');
         return $zoom;
     }
 
@@ -891,7 +881,7 @@ WecMap.createMap("' . $this->mapName . '" );';
     {
         $valid = false;
 
-        if ($this->groups && is_array($this->groups) && count($this->groups) > 0) {
+        if (count($this->groups) > 0) {
             $validMarkers = false;
             foreach ($this->groups as $key => $group) {
                 if ($group->hasMarkers()) {
@@ -926,14 +916,10 @@ WecMap.createMap("' . $this->mapName . '" );';
     public function hasHeightWidth()
     {
         if (!empty($this->width) && !empty($this->height)) {
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': height: ' . $this->height . ', width: ' . $this->width, 'wec_map_api');
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': height: ' . $this->height . ', width: ' . $this->width, 'wec_map_api');
             return true;
         } else {
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': width or height missing', 'wec_map_api', 3);
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': width or height missing', 'wec_map_api', 3);
             return false;
         }
     }
@@ -949,16 +935,14 @@ WecMap.createMap("' . $this->mapName . '" );';
     public function enableDirections($prefillAddress = false, $divID = null)
     {
         $this->prefillAddress = $prefillAddress;
-        if (TYPO3_DLOG) {
-            if ($prefillAddress && $divID) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions with prefill and written dirs', 'wec_map_api');
-            } elseif ($prefillAddress && !$divID) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions with prefill and without written dirs', 'wec_map_api');
-            } elseif (!$prefillAddress && $divID) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions without prefill but with written dirs', 'wec_map_api');
-            } elseif (!$prefillAddress && !$divID) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions without prefill and written dirs', 'wec_map_api');
-            }
+        if ($prefillAddress && $divID) {
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions with prefill and written dirs', 'wec_map_api');
+        } elseif ($prefillAddress && !$divID) {
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions with prefill and without written dirs', 'wec_map_api');
+        } elseif (!$prefillAddress && $divID) {
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions without prefill but with written dirs', 'wec_map_api');
+        } elseif (!$prefillAddress && !$divID) {
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': enabling directions without prefill and written dirs', 'wec_map_api');
         }
         $this->directions = true;
         $this->directionsDivID = $divID;
@@ -994,9 +978,7 @@ WecMap.createMap("' . $this->mapName . '" );';
         }
         $this->staticLimit = $limit;
 
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Enabling static maps: ' . $mode . ':' . $extent . ':' . $urlParam . ':' . $limit, 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Enabling static maps: ' . $mode . ':' . $extent . ':' . $urlParam . ':' . $limit, 'wec_map_api');
     }
 
     /**
@@ -1008,9 +990,7 @@ WecMap.createMap("' . $this->mapName . '" );';
     {
         $this->showInfoOnLoad = true;
 
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Showing info bubble on load', 'wec_map_api');
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Showing info bubble on load', 'wec_map_api');
     }
 
     /**
@@ -1022,6 +1002,18 @@ WecMap.createMap("' . $this->mapName . '" );';
     {
         if ($newZoom != null) {
             $this->maxAutoZoom = intval($newZoom);
+        }
+    }
+
+    /**
+     * @return array extConf
+     */
+    protected function getExtConf()
+    {
+        if (\TYPO3\CMS\Core\Utility\VersionNumberUtility::convertVersionNumberToInteger(TYPO3_version) >= 9000000) {
+            return GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('wec_map');
+        } else {
+            return unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
         }
     }
 }

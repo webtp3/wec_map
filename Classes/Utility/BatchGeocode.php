@@ -6,7 +6,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JBartels\WecMap\Module\MapAdministration;
+namespace JBartels\WecMap\Utility;
 
 /**
  * Performs autmated geocoding for any address information.
@@ -14,17 +14,17 @@ namespace JBartels\WecMap\Module\MapAdministration;
  */
 class BatchGeocode
 {
-    public $tables;
-    public $geocodedAddresses;
-    public $geocodeLimit;
-    public $processedAddresses;
+    protected $tables;
+    protected $geocodedAddresses;
+    protected $geocodeLimit;
+    protected $processedAddresses;
 
     /**
      * Default constructor.
      *
      * @return		none
      */
-    public function __construct($limit=10)
+    public function __construct($limit=25)
     {
         $this->tables = [];
         $this->geocodedAddresses = 0;
@@ -56,6 +56,16 @@ class BatchGeocode
                 $this->tables[] = $tableName;
             }
         }
+    }
+
+    /**
+     * Get names of registered tables
+     *
+     * @return		array
+     */
+    public function getTableNames()
+    {
+        return $this->tables;
     }
 
     /**
@@ -92,9 +102,13 @@ class BatchGeocode
             'country' => \JBartels\WecMap\Utility\Shared::getAddressField($table, 'country'),
         ];
 
-        $where = '1=1' . \TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
-        $result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $table, $where);
-        while ($row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result)) {
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable($table);
+        $statement = $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->execute();
+        while ($row = $statement->fetch()) {
             if ($this->stopGeocoding()) {
                 return;
             } else {
@@ -140,13 +154,9 @@ class BatchGeocode
      *
      * @return		bool		True/false whethr batch geocoding should be stopped.
      */
-    public function stopGeocoding()
+    protected function stopGeocoding()
     {
-        if ($this->geocodedAddresses >= $this->geocodeLimit) {
-            return true;
-        } else {
-            return false;
-        }
+        return  $this->geocodedAddresses >= $this->geocodeLimit;
     }
 
     /**
@@ -182,12 +192,28 @@ class BatchGeocode
 
         if (is_array($this->tables)) {
             foreach ($this->tables as $table) {
-                $where = '1=1' . \TYPO3\CMS\Backend\Utility\BackendUtility::deleteClause($table);
-                $result =  $GLOBALS['TYPO3_DB']->exec_SELECTquery('COUNT(*)', $table, $where);
-                $row =  $GLOBALS['TYPO3_DB']->sql_fetch_assoc($result);
-                $recordCount += $row['COUNT(*)'];
+                $recordCount += $this->getTableRecordCount($table);
             }
         }
+
+        return $recordCount;
+    }
+
+    /**
+     * Count of all records containing address-related data.
+     *
+     * @param		String		The name of the table
+     * @return		int		The count of all records with addresses.
+     */
+    public function getTableRecordCount($table)
+    {
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable($table);
+        $recordCount = $queryBuilder
+        ->count('*')
+        ->from($table)
+        ->execute()
+        ->fetchColumn(0);
 
         return $recordCount;
     }

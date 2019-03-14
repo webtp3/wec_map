@@ -39,18 +39,59 @@ class Shared
         }
     }
 
-    public static function listQueryFromCSV($field, $values, $table, $mode = 'AND')
+    public static function getListQueryFromCSV($field, $values, $queryBuilder, $mode = 'AND')
     {
-        $where = ' AND (';
+        $where = [];
         $csv = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $values);
-        for ($i=0; $i < count($csv); $i++) {
-            if ($i >= 1) {
-                $where .= ' ' . $mode . ' ';
+        foreach ($csv as $value) {
+            $where[] = $queryBuilder->expr()->inSet($field, $queryBuilder->expr()->literal((string) $value));
+        }
+        if ($mode == 'OR') {
+            return $queryBuilder->expr()->orX(...$where);
+        }
+        return $queryBuilder->expr()->andX(...$where);
+    }
+
+    public static function setOrderBy($queryBuilder, string $input)
+    {
+        // QueryHelper is marked "internal only" and may be deprecated in the future!
+        foreach (\TYPO3\CMS\Core\Database\Query\QueryHelper::parseOrderBy((string)$orderBy) as $orderPair) {
+            list($fieldName, $order) = $orderPair;
+            $queryBuilder->addOrderBy($fieldName, $order);
+        }
+    }
+
+    public static function setGroupBy($queryBuilder, string $input)
+    {
+        // QueryHelper is marked "internal only" and may be deprecated in the future!
+        $queryBuilder->groupBy(...\TYPO3\CMS\Core\Database\Query\QueryHelper::parseGroupBy($groupBy));
+    }
+
+    public static function setLimit($queryBuilder, string $input)
+    {
+        if ($limitValues) {
+            if ($limitValues->limit) {
+                $queryBuilder->setMaxResult($limit);
             }
-            $where .= $GLOBALS['TYPO3_DB']->listQuery($field, $csv[$i], $table);
+            if ($limitValues->offset) {
+                $queryBuilder->setFirstResult($limit);
+            }
         }
 
-        return $where . ')';
+        $limitValues = [];
+        $matchCount = preg_match('/^(?:LIMIT[[:space:]]+)?(\d+)(?:[[:space:]]*,[[:space:]]*(\d+))?$/i', trim($input), $limitValues);
+        if ($matchCount == 1) {
+            $queryBuilder->setMaxResult($input[1]);
+        } elseif ($matchCount == 2) {
+            $queryBuilder->setMaxResult($input[2]);
+            $queryBuilder->setFirstResult($input[1]);
+        } else {
+            $matchCount = preg_match('/^(?:LIMIT[[:space:]]+)?(\d+)[[:space:]]+OFFSET[[:space:]]+(\d+))$/i', trim($input), $limitValues);
+            if ($matchCount == 2) {
+                $queryBuilder->setMaxResult($input[1]);
+                $queryBuilder->setFirstResult($input[2]);
+            }
+        }
     }
 
     public static function getAddressField($table, $field)

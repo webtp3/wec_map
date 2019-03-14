@@ -237,11 +237,11 @@ class SimpleMap extends \TYPO3\CMS\Frontend\Plugin\AbstractPlugin
                     // add the marker to the map
                     $markerObj = $map->addMarkerByAddress(
                         $this->cObj->stdWrap($marker['street'], $marker['street.']),
-                                                           $this->cObj->stdWrap($marker['city'], $marker['city.']),
-                                                           $this->cObj->stdWrap($marker['state'], $marker['state.']),
-                                                           $this->cObj->stdWrap($marker['zip'], $marker['zip.']),
-                                                           $this->cObj->stdWrap($marker['country'], $marker['country.']),
-                                                           $title,
+                        $this->cObj->stdWrap($marker['city'], $marker['city.']),
+                        $this->cObj->stdWrap($marker['state'], $marker['state.']),
+                        $this->cObj->stdWrap($marker['zip'], $marker['zip.']),
+                        $this->cObj->stdWrap($marker['country'], $marker['country.']),
+                        $title,
                         $description,
                         0,
                         18,

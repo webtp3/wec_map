@@ -39,22 +39,19 @@ return [
                 'type' => 'input',
                 'size' => '32',
                 'max' => '128',
-                'wizards' => [
-                        'link' => [
-                                'type' => 'popup',
-                                'title' => 'Link',
-                                'icon' => 'actions-wizard-link',
-                                'module' => [
-                                    'name' => 'wizard_link',
-                                ],
-                                'JSopenParams' => 'height=300,width=500,status=0,menubar=0,scrollbars=1',
-                                'params' => [
-                                    'allowedExtensions' => 'kml, xml, kmz',
-                                    'blindLinkOptions' => 'folder, mail, page, spec, url'
-                                ]
-                        ],
 
-                ]
+                'renderType' => 'inputLink',
+                'fieldControl' => [
+                    'linkPopup' => [
+                        'options' => [
+                            'title' => 'Link',
+//							'title' => 'LLL:EXT:wec_map/...',
+                            'allowedExtensions' => 'kml, xml, kmz',
+                            'blindLinkOptions' => 'mail, page, spec, url',
+                            'blindLinkFields' => 'class, params, target, title'
+                        ],
+                    ],
+                ],
             ],
         ],
     ],

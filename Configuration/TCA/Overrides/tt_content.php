@@ -17,7 +17,7 @@ $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist']['wec_map_
 $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist']['wec_map_pi1']='pi_flexform';
 $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist']['wec_map_pi2']='pi_flexform';
 $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist']['wec_map_pi3']='pi_flexform';
-
+//#todo switch to register & configure plugin -> 9.5
 /* Add the plugins */
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPlugin(['LLL:EXT:wec_map/Resources/Private/Languages/locallang_db.xlf:tt_content.list_type_pi1', 'wec_map_pi1'], 'list_type', 'wec_map');
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPlugin(['LLL:EXT:wec_map/Resources/Private/Languages/locallang_db.xlf:tt_content.list_type_pi2', 'wec_map_pi2'], 'list_type', 'wec_map');

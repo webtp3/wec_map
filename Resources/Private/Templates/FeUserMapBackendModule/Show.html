@@ -1,0 +1,19 @@
+{namespace map=JBartels\WecMap\ViewHelpers}
+
+<f:layout name="FeUserMapBackendModule/Header" />
+
+<f:section name="content">
+    <div>
+        <h2 class="uppercase">
+            <f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/FEUserMap/locallang.xlf:show">
+                Map
+            </f:translate>
+        </h2>
+
+		<map:showMap width="500" height="500" 
+                     controls="{scale: 1, mapType: 1, zoom: 1 }"
+                     mapName="FeUserMapBackendModuleMap"
+                     markersByAddress="{markersByAddress}"
+        />
+    </div>
+</f:section>

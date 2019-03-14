@@ -54,37 +54,50 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
      */
     protected static function fetchCountries($country, $iso2='', $iso3='', $isonr='')
     {
-        $rcArray = [];
-        $where = '';
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable('static_countries');
+        $queryBuilder->getRestrictions()
+            ->removeAll();
+        $statement = $queryBuilder
+            ->select('*')
+            ->from('static_countries');
 
-        $table = 'static_countries';
         if ($country != '') {
-            $value = $GLOBALS['TYPO3_DB']->fullQuoteStr(trim('%' . $country . '%'), $table);
-            $where = 'cn_official_name_local LIKE ' . $value . ' OR cn_official_name_en LIKE ' . $value . ' OR cn_short_local LIKE ' . $value;
+            $statement = $statement->where($queryBuilder->logicalOr(
+                expr()->like(
+                    'cn_official_name_local',
+                    $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
+                ),
+                expr()->like(
+                    'cn_official_name_en',
+                    $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
+                ),
+                expr()->like(
+                    'cn_short_local',
+                    $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
+                )
+            ));
+        } elseif ($isonr != '') {
+            $statement = $statement->where($queryBuilder->eq(
+                'cn_iso_nr',
+                $queryBuilder->createNamedParameter(trim($isonr))
+            ));
+        } elseif ($iso2 != '') {
+            $statement = $statement->where($queryBuilder->eq(
+                'cn_iso_2',
+                $queryBuilder->createNamedParameter(trim($isonr))
+            ));
+        } elseif ($iso3 !='') {
+            $statement = $statement->where($queryBuilder->eq(
+                'cn_iso_3',
+                $queryBuilder->createNamedParameter(trim($isonr))
+            ));
+        } else {
+            $statement = $statement->where($queryBuilder->eq('1', '0'));
         }
 
-        if ($isonr != '') {
-            $where = 'cn_iso_nr=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(trim($isonr), $table);
-        }
+        $rcArray = $statement->execute()->fetchAll();
 
-        if ($iso2 != '') {
-            $where = 'cn_iso_2=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(trim($iso2), $table);
-        }
-
-        if ($iso3 !='') {
-            $where = 'cn_iso_3=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(trim($iso3), $table);
-        }
-
-        if ($where != '') {
-            $res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('*', $table, $where);
-
-            if ($res) {
-                while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
-                    $rcArray[] = $row;
-                }
-            }
-            $GLOBALS['TYPO3_DB']->sql_free_result($res);
-        }
         return $rcArray;
     }
 
@@ -103,7 +116,9 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
         $region = '';
 
         if (\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::isLoaded('static_info_tables')) {
-            // format address for Google search based on local address-format for given $country
+            // format address for Google search based on local address-format for given $country/*
+
+            //if ($country == '') { $country = "Deutschland"; }
 
             // convert $country to ISO3
             $countryCodeType = self::isoCodeType($country);
@@ -114,23 +129,30 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
             } elseif ($countryCodeType == '3') {
                 $countryArray = self::fetchCountries('', '', $country, '');
             } else {
-                global $TYPO3_DB;
-
-                $where = '';
-
-                $table = 'static_countries';
                 if ($country != '') {
-                    $value = $TYPO3_DB->fullQuoteStr(trim($country), $table);
-                    $where = 'cn_official_name_local=' . $value . ' OR cn_official_name_en=' . $value . ' OR cn_short_local=' . $value . ' OR cn_short_en=' . $value;
-
-                    $res = $TYPO3_DB->exec_SELECTquery('*', $table, $where);
-
-                    if ($res) {
-                        while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
-                            $countryArray[] = $row;
-                        }
-                    }
-                    $GLOBALS['TYPO3_DB']->sql_free_result($res);
+                    $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                        ->getQueryBuilderForTable('static_countries');
+                    $queryBuilder->getRestrictions()
+                        ->removeAll();
+                    $statement = $queryBuilder
+                        ->select('*')
+                        ->from('static_countries')
+                        ->where($queryBuilder->logicalOr(
+                            expr()->eq(
+                                'cn_official_name_local',
+                                $queryBuilder->createNamedParameter(trim($country))
+                            ),
+                            expr()->eq(
+                                'cn_official_name_en',
+                                $queryBuilder->createNamedParameter(trim($country))
+                            ),
+                            expr()->eq(
+                                'cn_short_local',
+                                $queryBuilder->createNamedParameter(trim($country))
+                            )
+                        ))
+                        ->execute();
+                    $countryArray = $statement->fetchAll();
                 }
 
                 if (!is_array($countryArray)) {
@@ -138,20 +160,17 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
                 }
             }
 
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: countryArray for ' . $country, 'wec_map_geocode', -1, $countryArray);
-            }
+
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: countryArray for ' . $country, 'wec_map_geocode', -1, $countryArray);
 
             if (is_array($countryArray) && count($countryArray) == 1) {
-                $country = $countryArray[0]['cn_iso_3'];
+                $country = $countryArray[0]['cn_short_local'];
                 $region = $countryArray[0]['cn_tldomain'];
             }
 
             // format address accordingly
-            $addressString = $this->formatAddress(',', $street, $city, $zip, $state, $country);  // $country: alpha-3 ISO-code (e. g. DEU)
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 addressString', 'wec_map_geocode', -1, [ street => $street, city => $city, zip => $zip, state => $state, country => $country, addressString => $addressString ]);
-            }
+            $addressString = $this->formatAddress(',', $street, $city, $zip, $state, $country);  // $country: local country name
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 addressString', 'wec_map_geocode', -1, [ street => $street, city => $city, zip => $zip, state => $state, country => $country, addressString => $addressString ]);
         }
 
         if (!$addressString) {
@@ -167,22 +186,18 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
             $url .= '&region=' . urlencode($region);
         }
 
-        $domainmgr = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Utility\DomainMgr::class);
-        $url = $domainmgr->addKeyToUrl($url, $domainmgr->getServerKey(), false);
+        $domainmgr = \JBartels\WecMap\Utility\DomainMgr::getInstance();
+        $url = $domainmgr->addKeyToUrl($url, $domainmgr->getServerKey());
 
         // request Google-service and parse JSON-response
-        if (TYPO3_DLOG) {
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: URL ' . $url, 'wec_map_geocode', -1);
-        }
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: URL ' . $url, 'wec_map_geocode', -1);
 
         $attempt = 1;
         do {
             $jsonstr = \TYPO3\CMS\Core\Utility\GeneralUtility::getURL($url);
 
             $response_obj = json_decode($jsonstr, true);
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $jsonstr, 'wec_map_geocode', -1, $response_obj);
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $jsonstr, 'wec_map_geocode', -1, $response_obj);
             if ($response_obj['status'] == 'OVER_QUERY_LIMIT') {
                 sleep(2);
             }
@@ -191,30 +206,30 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
         } while ($attempt <= 3 && $response_obj['status'] == 'OVER_QUERY_LIMIT');
 
         $latlong = [];
-        if (TYPO3_DLOG) {
-            $addressArray = [
-                'street' => $street,
-                'city' => $city,
-                'state' => $state,
-                'zip' => $zip,
-                'country' => $country,
-                'region' => $region
-            ];
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $addressString, 'wec_map_geocode', -1, $addressArray);
-        }
+        $addressArray = [
+            'street' => $street,
+            'city' => $city,
+            'state' => $state,
+            'zip' => $zip,
+            'country' => $country,
+            'region' => $region
+        ];
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $addressString, 'wec_map_geocode', -1, [
+            'street' => $street,
+            'city' => $city,
+            'state' => $state,
+            'zip' => $zip,
+            'country' => $country,
+            'region' => $region
+        ]);
 
         if ($response_obj['status'] == 'OK') {
             /*
              * Geocoding worked!
              */
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 Answer successful', 'wec_map_geocode', -1);
-            }
             $latlong['lat'] = floatval($response_obj['results'][0]['geometry']['location']['lat']);
             $latlong['long'] = floatval($response_obj['results'][0]['geometry']['location']['lng']);
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 Answer', 'wec_map_geocode', -1, $latlong);
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 Answer successful', 'wec_map_geocode', -1, $latlong);
         } elseif ($response_obj['status'] == 'REQUEST_DENIED'
                 || $response_obj['status'] == 'INVALID_REQUEST'
                 ) {
@@ -222,9 +237,7 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
              * Geocoder can't run at all, so disable this service and
              * try the other geocoders instead.
              */
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $response_obj['status'] . ': ' . $addressString . '. Disabling.', 'wec_map_geocode', 3);
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $response_obj['status'] . ': ' . $addressString . '. Disabling.', 'wec_map_geocode', 3);
             $this->deactivateService();
             $latlong = null;
         } else {
@@ -232,9 +245,7 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
              * Something is wrong with this address. Might work for other
              * addresses though.
              */
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $response_obj['status'] . ': ' . $addressString . '. Disabling.', 'wec_map_geocode', 2);
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3: ' . $response_obj['status'] . ': ' . $addressString . '. Disabling.', 'wec_map_geocode', 2);
             $latlong = null;
         }
 
@@ -274,13 +285,20 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
      * @param string $extKey
      * @return array
      */
-    public function loadTypoScriptForBEModule($extKey)
+    protected function loadTypoScriptForBEModule($extKey)
     {
-        list($page) = \TYPO3\CMS\Backend\Utility\BackendUtility::getRecordsByField('pages', 'pid', 0);
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable('pages');
+        $statement = $queryBuilder
+            ->select('uid')
+            ->from('pages')
+            ->where($queryBuilder->expr()->eq('pid', 0))
+            ->execute();
+        $page = $statement->fetch();
         $pageUid = intval($page['uid']);
-        /** @var \TYPO3\CMS\Frontend\Page\PageRepository $sysPageObj */
-        $sysPageObj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Frontend\Page\PageRepository::class);
-        $rootLine = $sysPageObj->getRootLine($pageUid);
+        /** @var \TYPO3\CMS\Core\Utility\RootlineUtility $rootlineUtility */
+        $rootlineUtility = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Utility\RootlineUtility::class, $pageUid);
+        $rootline = $rootlineUtility->get();
         /** @var \TYPO3\CMS\Core\TypoScript\ExtendedTemplateService $TSObj */
         $TSObj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\TypoScript\ExtendedTemplateService::class);
         $TSObj->tt_track = 0;

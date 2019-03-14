@@ -6,7 +6,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JBartels\WecMap\Module\MapAdministration;
+namespace JBartels\WecMap\Ajax;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,7 +15,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * Module 'WEC Map Admin' for the 'wec_map' extension.
  *
  */
-class Ajax
+class MapAdministrationBackendModule
 {
 
     /*************************************************************************
@@ -59,17 +59,18 @@ class Ajax
 
     public function ajaxBatchGeocode(ServerRequestInterface $request, ResponseInterface $response)
     {
-        $batchGeocode = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Module\MapAdministration\BatchGeocode::class);
+        $batchGeocode = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\JBartels\WecMap\Utility\BatchGeocode::class);
 
         // add all tables to check which ones need geocoding and do it
         $batchGeocode->addAllTables();
         $batchGeocode->geocode();
 
         $processedAddresses = $batchGeocode->getProcessedAddresses();
+        $geocodedAddresses = $batchGeocode->getGeocodedAddresses();
         $totalAddresses = $batchGeocode->getRecordCount();
 
         $response->getBody()->write(json_encode([
-            'geocoded' => $batchGeocode->geocodedAddresses,
+            'geocoded' => $geocodedAddresses,
             'processed' => $processedAddresses,
             'total' => $totalAddresses
         ]));
@@ -78,25 +79,9 @@ class Ajax
 
     public function ajaxListRecords(ServerRequestInterface $request, ResponseInterface $response)
     {
-        // Select rows:
-        $limit = null;
-        $displayRows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('*', 'tx_wecmap_cache', '', 'address', 'address', $limit);
-
-        $records = [];
-        foreach ($displayRows as $row) {
-            $cells = [
-                'address' => $row['address'],
-                'latitude' => $row['latitude'],
-                'longitude' => $row['longitude'],
-                'address_hash' => $row['address_hash']
-            ];
-            $records[] = $cells;
-        }
+        // fetch all cached addresses
+        $records = \JBartels\WecMap\Utility\Cache::getAllAddresses();
         $response->getBody()->write(json_encode($records));
         return $response;
     }
-}
-
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/mod1/index.php']) {
-    include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/wec_map/mod1/index.php']);
 }

@@ -174,10 +174,8 @@ class Map
     {
         $this->kilometers = $kilometers;
         $this->radius = $radius;
-        if (TYPO3_DLOG) {
-            $kilometers ? $km = 'km':$km = 'miles';
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': setting radius ' . $radius . ' ' . $km, 'wec_map_api');
-        }
+        $kilometers ? $km = 'km':$km = 'miles';
+        \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': setting radius ' . $radius . ' ' . $km, 'wec_map_api');
     }
 
     // haversine formula to calculate distance between two points
@@ -281,9 +279,7 @@ class Map
         if (!empty($this->radius)) {
             $distance = $this->getDistance($this->lat, $this->long, $lat, $long);
 
-            if (TYPO3_DLOG) {
-                \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Distance: ' . $distance . ' - Radius: ' . $this->radius, 'wec_map_api');
-            }
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog($this->mapName . ': Distance: ' . $distance . ' - Radius: ' . $this->radius, 'wec_map_api');
 
             if (!empty($this->lat) && !empty($this->long) &&  $distance > $this->radius) {
                 return null;
@@ -293,17 +289,17 @@ class Map
         if ($lat != '' && $long != '') {
             $group =& $this->addGroup($minzoom, $maxzoom);
             $marker =  \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                                      $this->getMarkerClassName(),
-                                      $group->getMarkerCount(),
-                                      $lat,
-                                      $long,
-                                      $title,
-                                      $description,
-                                      $this->prefillAddress,
-                                      null,
-                                      '0xFF0000',
-                                      '0xFFFFFF',
-                                      $iconID
+                $this->getMarkerClassName(),
+                $group->getMarkerCount(),
+                $lat,
+                $long,
+                $title,
+                $description,
+                $this->prefillAddress,
+                null,
+                '0xFF0000',
+                '0xFFFFFF',
+                $iconID
             );
             $group->addMarker($marker);
             $group->setDirections($this->directions);
@@ -368,8 +364,16 @@ class Map
         }
 
         // get address from db for this record
-        $record = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('*', $table, 'uid=' . intval($uid));
-        $record = $record[0];
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable($table);
+        $statement = $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT))
+            )
+            ->execute();
+        $record = $statement->fetch();
 
         if ($tca['addressFields']) {
             $streetfield  = \JBartels\WecMap\Utility\Shared::getAddressField($table, 'street');

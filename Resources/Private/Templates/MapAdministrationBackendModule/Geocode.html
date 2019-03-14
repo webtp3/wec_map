@@ -1,0 +1,119 @@
+{namespace core = TYPO3\CMS\Core\ViewHelpers}
+
+<f:layout name="MapAdministrationBackendModule/Header" />
+
+<f:section name="content">
+    <div>
+        <h2 class="uppercase">
+            <f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:geocode">
+                Geocode
+            </f:translate>
+        </h2>
+
+		<f:if condition="{f:count(subject: addresses)}>0}">
+			<f:then>
+
+				<p>
+					<div class="form-inline">
+						<div class="form-group">
+								<input id="recordSearchbox" type="text" class="form-control" placeholder="{f:translate(key: 'LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:searchFilter', default: 'searchFilter')}" size="20"/>
+						</div>
+						<button id="resetSearchboxButton" class="btn btn-default" style="display:none">
+							<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:clearFilter">
+								clearFilter
+							</f:translate>
+						</button>
+					</div>
+				</p>
+
+				<div class="table-fit">
+					<table class="table table-striped table-hover" id="tx-wecmap-cache">
+						<thead>
+							<tr>
+								<th>
+									<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:address">
+										noRecords
+									</f:translate>
+								</th>
+								<th>
+									<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:latitude">
+										noRecords
+									</f:translate>
+								</th>
+								<th>
+									<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:longitude">
+										noRecords
+									</f:translate>
+								</th>
+								<th>
+									<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:Actions">
+										Action
+									</f:translate>
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<f:for each="{addresses}" as="address">
+								<tr>
+								<tr id="item_{address.address_hash}" data-cacheid="{address.address_hash}" class="address">
+									<td class="address">{address.address}</td>
+									<td class="latitude">{address.latitude}</td>
+									<td class="longitude">{address.longitude}</td>
+									<td class="editButton">
+										<div class="btn-group">
+											<!--
+											<f:link.action action="editCacheEntry" class="btn btn-default" arguments="{hash: address.address_hash}">
+												<core:icon identifier="actions-open" size="small"/>
+											</f:link.action>
+											<f:link.action action="saveCacheEntry" class="btn btn-default saveButton" style="display:none;" arguments="{hash: address.address_hash}">
+												<core:icon identifier="actions-document-save" size="small"/>
+											</f:link.action>
+											<f:link.action action="closeCacheEntry" class="btn btn-default cancelButton" style="display:none;" arguments="{hash: address.address_hash}">
+												<core:icon identifier="actions-close" size="small"/>
+											</f:link.action>
+											<f:link.action action="deleteCacheEntry" class="btn btn-default deleteButton" arguments="{hash: address.address_hash}">
+												<core:icon identifier="actions-delete" size="small"/>
+											</f:link.action>
+											-->
+											<div class="btn btn-default editButton">
+												<core:icon identifier="actions-open" size="small"/>
+											</div>
+											<div class="btn btn-default saveButton">
+												<core:icon identifier="actions-document-save" size="small"/>
+											</div>
+											<div class="btn btn-default cancelButton">
+												<core:icon identifier="actions-close" size="small"/>
+											</div>
+											<div class="btn btn-default deleteButton">
+												<core:icon identifier="actions-delete" size="small"/>
+											</div>
+										</div>
+									</td>
+								</tr>
+							</f:for>
+						</tbody>
+					</table>
+				</div>
+
+				<p>
+					<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:totalCachedAddresses">
+						totalCachedAddresses
+					</f:translate>
+					<strong><span id="recordCount"><f:count>{addresses}</f:count></span></strong>
+					<f:link.action action="deleteCache" class="btn btn-default">
+						<core:icon identifier="actions-delete" size="small"/>
+					</f:link.action>
+				</p>
+
+			</f:then>
+			<f:else>
+
+				<div id="noRecords">
+					<f:translate key="LLL:EXT:wec_map/Resources/Private/Languages/Backend/MapAdministration/locallang.xlf:noRecords">
+						noRecords
+					</f:translate>
+				</div>
+			</f:else>
+		</f:if>
+    </div>
+</f:section>
