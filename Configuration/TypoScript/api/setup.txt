@@ -13,6 +13,7 @@ config.tx_extbase.persistence.classes {
 }
 
 tx_wecmap_api {
+	apiKey = {$mapsAPIkey}
 	addressForm = COA_INT
 	addressForm {
 		20 = TEXT

@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * This file is part of the web-tp3/wec_map.
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
+
 namespace JBartels\WecMap;
 
 /*
@@ -24,7 +31,7 @@ class ext_update
      *
      * @var array
      */
-    protected $messageArray = array();
+    protected $messageArray = [];
 
     /**
      * @var \TYPO3\CMS\Core\Configuration\FlexForm\FlexFormTools
@@ -59,21 +66,21 @@ class ext_update
     public function access()
     {
         // Check for changed options in FlexForms
-		$queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance( \TYPO3\CMS\Core\Database\ConnectionPool::class )
-            ->getQueryBuilderForTable( 'tt_content' );
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable('tt_content');
         $queryBuilder
             ->getRestrictions()->removeAll();
         $count = $queryBuilder
             ->count('*')
-			->from( 'tt_content' )
-			->where(
+            ->from('tt_content')
+            ->where(
                 $queryBuilder->expr()->like(
                     'pi_flexform',
-                    $queryBuilder->createNamedParameter( $this->mapControlSizeWhere )
+                    $queryBuilder->createNamedParameter($this->mapControlSizeWhere)
                 ),
                 $queryBuilder->expr()->like(
                     'list_type',
-                    $queryBuilder->createNamedParameter( 'wec_map_pi%%' )
+                    $queryBuilder->createNamedParameter('wec_map_pi%%')
                 )
             )
             ->execute()
@@ -99,61 +106,61 @@ class ext_update
      */
     protected function migrateToNewZoomControlInFlexForms()
     {
-		$queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance( \TYPO3\CMS\Core\Database\ConnectionPool::class )
-    		->getQueryBuilderForTable( 'tt_content' );
+        $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+            ->getQueryBuilderForTable('tt_content');
         $queryBuilder
             ->getRestrictions()->removeAll();
         $statement = $queryBuilder
             ->select('*')
-			->from( 'tt_content' )
-			->where(
+            ->from('tt_content')
+            ->where(
                 $queryBuilder->expr()->like(
                     'pi_flexform',
-                    $queryBuilder->createNamedParameter( $this->mapControlSizeWhere )
+                    $queryBuilder->createNamedParameter($this->mapControlSizeWhere)
                 ),
                 $queryBuilder->expr()->like(
                     'list_type',
-                    $queryBuilder->createNamedParameter( 'wec_map_pi%%' )
+                    $queryBuilder->createNamedParameter('wec_map_pi%%')
                 )
             )
             ->execute();
         $count = 0;
-        while( $row = $statement->fetch() ) {            
-        	$flexformData = \TYPO3\CMS\Core\Utility\GeneralUtility::xml2array($row['pi_flexform']);
+        while ($row = $statement->fetch()) {
+            $flexformData = \TYPO3\CMS\Core\Utility\GeneralUtility::xml2array($row['pi_flexform']);
 
             $mapControlSize = $flexformData['data']['mapControls']['lDEF']['mapControlSize']['vDEF'];
-			unset( $flexformData['data']['mapControls']['lDEF']['mapControlSize']);
-			switch ( $mapControlSize ) {
-			case 'large':
-			case 'small':
-			case 'zoomonly':
-				$flexformData['data']['mapControls']['lDEF']['showZoom']['vDEF']='1';
-				break;
-			case 'none':
-			case '':
-				$flexformData['data']['mapControls']['lDEF']['showZoom']['vDEF']='0';
-				break;
-			}
-            $flexformData = $this->getFlexFormTools()->flexArray2Xml($flexformData, TRUE);
-            
-            $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance( \TYPO3\CMS\Core\Database\ConnectionPool::class )
-                ->getQueryBuilderForTable( 'tt_content' );
+            unset($flexformData['data']['mapControls']['lDEF']['mapControlSize']);
+            switch ($mapControlSize) {
+            case 'large':
+            case 'small':
+            case 'zoomonly':
+                $flexformData['data']['mapControls']['lDEF']['showZoom']['vDEF']='1';
+                break;
+            case 'none':
+            case '':
+                $flexformData['data']['mapControls']['lDEF']['showZoom']['vDEF']='0';
+                break;
+            }
+            $flexformData = $this->getFlexFormTools()->flexArray2Xml($flexformData, true);
+
+            $queryBuilder = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+                ->getQueryBuilderForTable('tt_content');
             $queryBuilder
                 ->getRestrictions()->removeAll();
             $queryBuilder
                 ->update('tt_content')
                 ->where(
-                    $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter( $row['uid'], \PDO::PARAM_INT ) )
+                    $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], \PDO::PARAM_INT))
                 )
-                ->set('pi_flexform', $flexformData )
+                ->set('pi_flexform', $flexformData)
                 ->execute();
-			$count++;
+            $count++;
         }
-        $this->messageArray[] = array(
+        $this->messageArray[] = [
             \TYPO3\CMS\Core\Messaging\FlashMessage::OK,
             'Migrating flexforms successful',
-            'We have updated '.$count.' related tt_content records'
-        );
+            'We have updated ' . $count . ' related tt_content records'
+        ];
     }
 
     /**
@@ -174,7 +181,8 @@ class ext_update
         );
         foreach ($this->messageArray as $messageItem) {
             /** @var \TYPO3\CMS\Core\Messaging\FlashMessage $flashMessage */
-            $flashMessage = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Messaging\FlashMessage::class,
+            $flashMessage = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                \TYPO3\CMS\Core\Messaging\FlashMessage::class,
                 $messageItem[2],
                 $messageItem[1],
                 $messageItem[0]

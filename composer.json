@@ -1,16 +1,16 @@
 {
-	"name": "jbartels/wec-map",
+	"name": "web-tp3/wec_map",
 	"description": "WEC Google Maps",
 	"type": "typo3-cms-extension",
-	"version": "3.3.99",
 	"license": "GPL-2.0+",
 	"authors": [
 		{
-			"name": "Christian Technology Ministries International Inc."
+			"name": "Christian Technology Ministries International Inc.",
+			"email": "j.bartels@arcor.de"
 		},
 		{
-			"name": "Jan Bartels",
-			"email": "j.bartels@arcor.de"
+			"name": "Thomas Ruta",
+			"email": "email@thomasruta.de"
 		}
 	],
 	"autoload": {
@@ -18,11 +18,46 @@
 			"JBartels\\WecMap\\": "Classes/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"JBartels\\WecMap\\": "Tests/"
+		}
+	},
 	"require": {
-		"typo3/cms-core": ">=7.6.0,<=8.9.99"
+		"typo3/cms-core": "^8.7 || ^9.5",
+		"php": ">=7.0.0 <=7.2.99",
+		"typo3/class-alias-loader": "^1.0"
+
+	},
+	"require-dev": {
+		"friendsofphp/php-cs-fixer": "^2.0",
+		"nimut/testing-framework": "^1.0 || ^2.0 || ^3.0 || ^4.0",
+		"web-tp3/cag_tests":"^1.2"
+
 	},
 	"replace": {
 		"wec_map": "self.version",
-		"typo3-ter/wec-map": "self.version"
+		"typo3-ter/wec-map": "self.version",
+		"web-tp3/wec-map": "self.version"
+	},
+	"extra": {
+		"typo3/class-alias-loader": {
+			"always-add-alias-loader": true,
+			"autoload-case-sensitivity": false,
+			"class-alias-maps": [
+				"Migrations/Code/ClassAliasMap.php"
+			]
+		}
+	},
+	"scripts": {
+		"test:php:unit": [
+			"@php -v",
+			"@php .Build/bin/phpunit Tests/Unit"
+		]
+
+	},
+	"config": {
+		"vendor-dir": ".Build/vendor",
+		"bin-dir": ".Build/bin"
 	}
 }

@@ -1,24 +1,10 @@
 <?php
-/***************************************************************
-* Copyright notice
-*
-* (c) 2018-2019 j.bartels
-* All rights reserved
-*
-* You can redistribute this file and/or modify it under the terms of the
-* GNU General Public License as published by the Free Software Foundation;
-* either version 2 of the License, or (at your option) any later version.
-*
-* The GNU General Public License can be found at
-* http://www.gnu.org/copyleft/gpl.html.
-*
-* This file is distributed in the hope that it will be useful for ministry,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* This copyright notice MUST APPEAR in all copies of the file!
-***************************************************************/
+
+/*
+ * This file is part of the web-tp3/wec_map.
+ * For the full copyright and license information, please read the
+ * LICENSE file that was distributed with this source code.
+ */
 
 namespace JBartels\WecMap\Domain\Model;
 
@@ -55,7 +41,6 @@ class Domain extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
         $this->domainName = $domainName;
     }
 
-
     /**
      * browserKey
      *
@@ -83,7 +68,6 @@ class Domain extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     {
         $this->browserKey = $browserKey;
     }
-
 
     /**
      * staticKey
@@ -113,7 +97,6 @@ class Domain extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
         $this->staticKey = $staticKey;
     }
 
-
     /**
      * serverKey
      *
@@ -141,5 +124,4 @@ class Domain extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     {
         $this->serverKey = $serverKey;
     }
-
 }
