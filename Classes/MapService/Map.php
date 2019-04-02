@@ -26,7 +26,7 @@ class Map
     public $height;
     public $mapName;
     public $groupCount = 0;
-    public $groups;
+    public $groups = [];
     public $js;
 
     public $mapOptions = [];
