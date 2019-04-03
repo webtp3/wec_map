@@ -1,0 +1,21 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="main">
+    <h1>WEC_MAP tp3</h1>
+
+    <f:form action="geocodeAdmin" id="editform" controller="MapAdministration"  name="geocodeAdmin" object="{panorama}" arguments="{panorama: panorama}">
+        <f:format.raw>{geocodeAdmin}</f:format.raw>
+    </f:form>
+        <f:format.raw>{batchGeocode}</f:format.raw>
+
+        <f:format.raw>{apiKeyAdmin}</f:format.raw>
+
+
+</f:section>
+<f:section name="Index">
+    <div class="container">
+        TEst  Index
+        <f:format.raw>{content}</f:format.raw>
+    </div>
+</f:section>

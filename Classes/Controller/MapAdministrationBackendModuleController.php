@@ -41,7 +41,19 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class MapAdministrationBackendModuleController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionController
 {
+    /** @var int */
+    protected $id = 1;
 
+    /**
+     *
+     */
+    public function initializeAction()
+    {
+        parent::initializeAction();
+
+        $this->id = (int)\TYPO3\CMS\Core\Utility\GeneralUtility::_GET('id');
+
+    }
     /**
      * action geocode
      *
@@ -50,6 +62,7 @@ class MapAdministrationBackendModuleController extends \TYPO3\CMS\Extbase\Mvc\Co
     public function geocodeAction()
     {
         // fetch all cached addresses
+        // -> breaks with 16000
         $addresses = \JBartels\WecMap\Utility\Cache::getAllAddresses();
         $this->view->assign('addresses', $addresses);
     }

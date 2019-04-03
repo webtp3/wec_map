@@ -49,7 +49,7 @@ class Cache
             $latlong = self::find($street, $city, $state, $zip, $country);
 
             /* Didn't find a cached match */
-            if (is_null($latlong)) {
+            if (is_array($latlong) && is_null($latlong["lat"])) {
                 /* Intiate service chain to find lat/long */
                 $serviceChain='';
 
@@ -384,6 +384,7 @@ class Cache
         $statement = $queryBuilder
             ->select('address', 'latitude', 'longitude', 'address_hash')
             ->from('tx_wecmap_cache')
+            ->setMaxResults(100)
             ->execute();
         return $statement->fetchAll();
     }

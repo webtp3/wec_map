@@ -49,7 +49,7 @@ class Marker extends \JBartels\WecMap\MapService\Marker
      */
     public function __construct($index, $latitude, $longitude, $title, $description, $prefillAddress = false, $tabLabels=null, $color='0xFF0000', $strokeColor='0xFFFFFF', $iconID='')
     {
-
+        parent::__construct();
         // Detect language
         if (TYPO3_MODE == 'BE') {
             $this->lang = $GLOBALS['BE_USER']->uc['lang'];

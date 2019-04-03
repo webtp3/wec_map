@@ -1,0 +1,5 @@
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/TypoScript/setup.txt">
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/TypoScript/api/setup.txt">
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/TypoScript/pi1/setup.txt">
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/TypoScript/pi12/setup.txt">
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/TypoScript/pi13setup.txt">

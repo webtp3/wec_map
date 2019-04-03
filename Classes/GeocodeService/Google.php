@@ -63,37 +63,41 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
             ->from('static_countries');
 
         if ($country != '') {
-            $statement = $statement->where($queryBuilder->logicalOr(
-                expr()->like(
+            $statement = $statement->where($queryBuilder->expr()->orX(
+                $queryBuilder->expr()->like(
                     'cn_official_name_local',
                     $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
                 ),
-                expr()->like(
+                $queryBuilder->expr()->like(
                     'cn_official_name_en',
                     $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
                 ),
-                expr()->like(
+                $queryBuilder->expr()->like(
                     'cn_short_local',
                     $queryBuilder->createNamedParameter('%' . $queryBuilder->escapeLikeWildcards(trim($country)) . '%')
                 )
             ));
         } elseif ($isonr != '') {
-            $statement = $statement->where($queryBuilder->eq(
+            $statement = $statement->where($queryBuilder->expr()->eq(
                 'cn_iso_nr',
                 $queryBuilder->createNamedParameter(trim($isonr))
             ));
         } elseif ($iso2 != '') {
-            $statement = $statement->where($queryBuilder->eq(
+            $statement = $statement->where($queryBuilder->expr()->eq(
                 'cn_iso_2',
                 $queryBuilder->createNamedParameter(trim($isonr))
             ));
         } elseif ($iso3 !='') {
-            $statement = $statement->where($queryBuilder->eq(
+            $statement = $statement->where($queryBuilder->expr()->eq(
                 'cn_iso_3',
                 $queryBuilder->createNamedParameter(trim($isonr))
             ));
         } else {
-            $statement = $statement->where($queryBuilder->eq('1', '0'));
+            //$statement = $statement->where($queryBuilder->expr()->eq('1', '0'));
+            $statement = $statement->where($queryBuilder->expr()->eq(
+                'cn_iso_3',
+                $queryBuilder->createNamedParameter(trim('DEU'))
+            ));
         }
 
         $rcArray = $statement->execute()->fetchAll();
@@ -135,16 +139,16 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
                     $statement = $queryBuilder
                         ->select('*')
                         ->from('static_countries')
-                        ->where($queryBuilder->logicalOr(
-                            expr()->eq(
+                        ->where($queryBuilder->expr()->orX(
+                            $queryBuilder->expr()->eq(
                                 'cn_official_name_local',
                                 $queryBuilder->createNamedParameter(trim($country))
                             ),
-                            expr()->eq(
+                            $queryBuilder->expr()->eq(
                                 'cn_official_name_en',
                                 $queryBuilder->createNamedParameter(trim($country))
                             ),
-                            expr()->eq(
+                            $queryBuilder->expr()->eq(
                                 'cn_short_local',
                                 $queryBuilder->createNamedParameter(trim($country))
                             )
@@ -167,7 +171,7 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
 
             // format address accordingly
             $addressString = $this->formatAddress(',', $street, $city, $zip, $state, $country);  // $country: local country name
-            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 addressString', 'wec_map_geocode', -1, [ street => $street, city => $city, zip => $zip, state => $state, country => $country, addressString => $addressString ]);
+            \TYPO3\CMS\Core\Utility\GeneralUtility::devLog('Google V3 addressString', 'wec_map_geocode', -1, [ 'street' => $street, 'city' => $city, 'zip' => $zip, 'state' => $state, 'country' => $country, 'addressString' => $addressString ]);
         }
 
         if (!$addressString) {
@@ -292,7 +296,7 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
             ->where($queryBuilder->expr()->eq('pid', 0))
             ->execute();
         $page = $statement->fetch();
-        $pageUid = intval($page['uid']);
+        $pageUid = (int)$page['uid'] > 0 ? (int)$page['uid'] : 1;
         /** @var \TYPO3\CMS\Core\Utility\RootlineUtility $rootlineUtility */
         $rootlineUtility = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Utility\RootlineUtility::class, $pageUid);
         $rootline = $rootlineUtility->get();
@@ -300,7 +304,9 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
         $TSObj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\TypoScript\ExtendedTemplateService::class);
         $TSObj->tt_track = 0;
         $TSObj->init();
-        $TSObj->runThroughTemplates($rootLine);
+
+        //var_dump($rootLine);
+        if($rootLine != null) $TSObj->runThroughTemplates($rootLine);
         $TSObj->generateConfig();
         return $TSObj->setup['plugin.'][$extKey . '.'];
     }
