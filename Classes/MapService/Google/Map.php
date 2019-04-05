@@ -239,7 +239,7 @@ class Map extends \JBartels\WecMap\MapService\Map
             $jsFile3 = $jsDir . 'wecmap_backend.js';
 
             if (TYPO3_MODE == 'FE') {
-                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_apiURL', $apiURL, 'text/javascript', true, false, '', false, '|', false, '');
+                $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_apiURL', $apiURL, 'text/javascript', false, false, '', true, '|', true, '');
                 $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_mmURL', $mmURL, 'text/javascript', true, false, '', false, '|', false, '');
                 $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_ibURL', $ibURL, 'text/javascript', true, false, '', false, '|', false, '');
                 $this->pageRenderer->addJsFooterLibrary('wec_map_googleMaps_omURL', $omURL, 'text/javascript', true, false, '', false, '|', false, '');
