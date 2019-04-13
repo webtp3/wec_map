@@ -2,6 +2,7 @@
 	"name": "web-tp3/wec_map",
 	"description": "WEC Google Maps",
 	"type": "typo3-cms-extension",
+	"version": "4.4.0",
 	"license": "GPL-2.0+",
 	"authors": [
 		{

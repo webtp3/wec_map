@@ -299,6 +299,7 @@ class Google extends \TYPO3\CMS\Core\Service\AbstractService
         $pageUid = (int)$page['uid'] > 0 ? (int)$page['uid'] : 1;
         /** @var \TYPO3\CMS\Core\Utility\RootlineUtility $rootlineUtility */
         $rootlineUtility = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Utility\RootlineUtility::class, $pageUid);
+        //no domain
         $rootline = $rootlineUtility->get();
         /** @var \TYPO3\CMS\Core\TypoScript\ExtendedTemplateService $TSObj */
         $TSObj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\TypoScript\ExtendedTemplateService::class);
