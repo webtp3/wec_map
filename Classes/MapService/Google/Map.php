@@ -8,7 +8,6 @@
 
 namespace JBartels\WecMap\MapService\Google;
 
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 
@@ -1021,7 +1020,7 @@ WecMap.createMap("' . $this->mapName . '" );';
     protected function getExtConf()
     {
         if (\TYPO3\CMS\Core\Utility\VersionNumberUtility::convertVersionNumberToInteger(TYPO3_version) >= 9000000) {
-            return GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('wec_map');
+            return GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)->get('wec_map');
         } else {
             return unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
         }

@@ -6,6 +6,8 @@
  * LICENSE file that was distributed with this source code.
  */
 
+namespace JBartels\WecMap\Tests\Unit;
+
 /**
  * Test case for WEC Map
  *
@@ -13,8 +15,14 @@
  *
  *
  */
-class tx_wecmap_autozoom_testcase extends tx_phpunit_testcase
+use Nimut\TestingFramework\TestCase\UnitTestCase;
+
+class tx_wecmap_autozoom_testcase extends UnitTestCase
 {
+    /**
+
+     * @test
+     */
     public function test_default_max_auto_zoom_is_15()
     {
         $map = $this->createMap();
@@ -22,7 +30,10 @@ class tx_wecmap_autozoom_testcase extends tx_phpunit_testcase
 
         $this->assertEquals(15, $map->zoom);
     }
+    /**
 
+     * @test
+     */
     public function test_max_auto_zoom_setter_with_7()
     {
         $map = $this->createMap();
@@ -31,7 +42,10 @@ class tx_wecmap_autozoom_testcase extends tx_phpunit_testcase
 
         $this->assertEquals(7, $map->zoom);
     }
+    /**
 
+     * @test
+     */
     public function test_max_auto_zoom_is_15_if_setter_empty()
     {
         $map = $this->createMap();
@@ -39,7 +53,10 @@ class tx_wecmap_autozoom_testcase extends tx_phpunit_testcase
         $map->autoCenterAndZoom();
         $this->assertEquals(15, $map->zoom);
     }
+    /**
 
+     * @test
+     */
     public function createMap()
     {
         //include_once(\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('wec_map').'map_service/google/class.tx_wecmap_map_google.php');

@@ -8,7 +8,6 @@
 
 namespace JBartels\WecMap\Utility;
 
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -414,7 +413,7 @@ class Backend
     public static function getExtConf($key)
     {
         if (\TYPO3\CMS\Core\Utility\VersionNumberUtility::convertVersionNumberToInteger(TYPO3_version) >= 9000000) {
-            $extConf = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('wec_map');
+            $extConf = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)->get('wec_map');
         } else {
             $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['wec_map']);
         }

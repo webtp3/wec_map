@@ -11,7 +11,7 @@ $EM_CONF[$_EXTKEY] = [
     'description' => 'Mapping extension that connects to geocoding databases and Google Maps API.',
     'category' => 'plugin',
     'shy' => 0,
-    'version' => '4.4.0',
+    'version' => '4.1.6',
     'priority' => 'bottom',
     'loadOrder' => '',
     'module' => 'mod1,mod2',
@@ -29,7 +29,7 @@ $EM_CONF[$_EXTKEY] = [
     'constraints' => [
         'depends' => [
             'php' => '7.0.0-7.2.99',
-            'typo3' => '7.6.0-8.7.99',
+            'typo3' => '8.7.0-9.9.99',
         ],
         'conflicts' => [
         ],

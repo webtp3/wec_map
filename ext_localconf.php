@@ -26,7 +26,7 @@ if (!defined('TYPO3_MODE')) {
 ** add New CE-wizard elements
 */
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPageTSConfig(
-    '<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/PageTS/NewContentElementWizard.txt">'
+    '<INCLUDE_TYPOSCRIPT: source="FILE:EXT:wec_map/Configuration/PageTS/NewContentElementWizard.typoscript">'
 );
 
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][] = \JBartels\WecMap\Utility\Backend::class;
